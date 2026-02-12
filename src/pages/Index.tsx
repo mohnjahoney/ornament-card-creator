@@ -1,14 +1,34 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { WizardProvider, useWizard } from '@/context/WizardContext';
+import SplashPage from '@/components/wizard/SplashPage';
+import ImageUploadPage from '@/components/wizard/ImageUploadPage';
+import DesignOptionsPage from '@/components/wizard/DesignOptionsPage';
+import FinalPreviewPage from '@/components/wizard/FinalPreviewPage';
 
-const Index = () => {
+function WizardRouter() {
+  const { state } = useWizard();
+  switch (state.currentStep) {
+    case 0:
+      return <SplashPage />;
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+      return <ImageUploadPage />;
+    case 5:
+      return <DesignOptionsPage />;
+    case 6:
+      return <FinalPreviewPage />;
+    default:
+      return <SplashPage />;
+  }
+}
+
+export default function Index() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <WizardProvider>
+      <div className="min-h-screen bg-background">
+        <WizardRouter />
       </div>
-    </div>
+    </WizardProvider>
   );
-};
-
-export default Index;
+}
