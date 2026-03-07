@@ -1,0 +1,4 @@
+To run the assembly animation
+python3 -m http.server
+Go to
+http://localhost:8000/ornament-assembly.html
