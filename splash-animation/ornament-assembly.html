@@ -43,6 +43,10 @@
   const Ta = new THREE.Vector3(0, 3*R, zAssemble);
   const Tc = new THREE.Vector3(0, 0.6*Rc, zAssemble);
 
+  // title anchor is location of the "O"
+  const titleAnchor = new THREE.Vector3(0, 0, zAssemble);
+
+
   const L0 = new THREE.Vector3(-1.6*R, 0, 0);
   const R0 = new THREE.Vector3(+1.6*R, 0, 0);
   const C0 = new THREE.Vector3(0, paperH/2 - 0.8*R, 0);
@@ -73,7 +77,37 @@
   const tF0 = 3.20, tF1 = 4.00;
   const tG0 = 4.00, tG1 = 4.60;
   const tH0 = 4.60, tH1 = 5.00;
-  const tI0 = 5.00, tI1 = 6.00;
+  const tI0 = 5.00, tI1 = 8.00;
+
+  // -------------------------
+  // Title letter config
+  // -------------------------
+  const titleLetters = ["r", "n", "a", "m", "e", "n", "t", " ", "M", "a", "k", "e", "r"];
+
+  const letterCfg = {
+    baselineY: 0,
+    finalZ: zAssemble + 0.02,
+
+    // sequenceStart: 5.15,     // seconds on the GSAP timeline
+    // flightDuration: 0.9,     // seconds per letter
+    // launchDelay: 0.08,       // overlap between letters
+
+    sequenceStart: 5.0,     // seconds on the GSAP timeline
+    flightDuration: 2,     // seconds per letter
+    launchDelay: 0.3,       // overlap between letters
+
+    startScale: 0.18,
+    // finalScale: 0.62,
+    finalScale: 3.0,
+    arcHeight: 0.35,
+
+    spacing: 0.52,
+    wordGapExtra: 0.30,
+
+    spawnOffsetX: 0.10,
+    spawnOffsetY: 0,
+    spawnOffsetZ: -0.35,
+  };
 
   // -------------------------
   // Three.js scene setup
@@ -297,8 +331,69 @@
 
   // Assembly group (pivot at T)
   const assemblyGroup = new THREE.Group();
+  const letterGroup = new THREE.Group();
   assemblyGroup.position.copy(T);
   scene.add(assemblyGroup);
+  scene.add(letterGroup);
+
+  // -------------------------
+  // Title letter helpers
+  // -------------------------
+  function makeLetterSprite(char) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 512;
+
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#f6f6f4";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 320px Arial";
+    ctx.fillText(char, canvas.width / 2, canvas.height / 2 + 8);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.generateMipmaps = false;
+
+    const material = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      opacity: 0,
+    });
+
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(letterCfg.startScale, letterCfg.startScale, 1);
+    return sprite;
+  }
+
+  function createTitleLetters() {
+    letterGroup.clear();
+
+    let cursorX = titleAnchor.x + 0.62;
+
+    for (const ch of titleLetters) {
+      if (ch === " ") {
+        cursorX += letterCfg.spacing + letterCfg.wordGapExtra;
+        continue;
+      }
+
+      const sprite = makeLetterSprite(ch);
+
+      sprite.position.set(
+        titleAnchor.x + letterCfg.spawnOffsetX,
+        titleAnchor.y + letterCfg.spawnOffsetY,
+        titleAnchor.z + letterCfg.spawnOffsetZ
+      );
+      sprite.userData.targetX = cursorX;
+      sprite.userData.targetY = letterCfg.baselineY;
+      sprite.userData.targetZ = letterCfg.finalZ;
+      sprite.userData.arcHeight = letterCfg.arcHeight;
+
+      letterGroup.add(sprite);
+      cursorX += letterCfg.spacing;
+    }
+  }
 
   // -------------------------
   // GSAP Timeline (total 6.0s)
@@ -318,6 +413,7 @@
     cap.mesh.rotation.set(0, 0, 0);
 
     assemblyGroup.rotation.set(0, 0, 0);
+    createTitleLetters();
 
     // Ensure pieces are direct children of scene pre-Phase I
     if (ornamentL.group.parent !== scene) reparentPreserveWorld(ornamentL.group, scene);
@@ -330,6 +426,58 @@
     tl = gsap.timeline({
       defaults: { overwrite: true },
       duration: 6.0
+    });
+
+    letterGroup.children.forEach((sprite, index) => {
+      const launchTime = letterCfg.sequenceStart + index * letterCfg.launchDelay;
+      const mat = sprite.material;
+
+      tl.call(() => {
+        sprite.position.set(
+          titleAnchor.x + letterCfg.spawnOffsetX,
+          titleAnchor.y + letterCfg.spawnOffsetY,
+          titleAnchor.z + letterCfg.spawnOffsetZ
+        );
+        sprite.scale.set(letterCfg.startScale, letterCfg.startScale, 1);
+        mat.opacity = 0;
+      }, [], launchTime);
+
+      tl.to(sprite.position, {
+        x: sprite.userData.targetX,
+        z: sprite.userData.targetZ,
+        duration: letterCfg.flightDuration,
+        ease: "power2.inOut"
+      }, launchTime);
+
+      tl.to(sprite.scale, {
+        x: letterCfg.finalScale * 1.12,
+        y: letterCfg.finalScale * 1.12,
+        duration: letterCfg.flightDuration * 0.65,
+        ease: "back.out(1.7)"
+      }, launchTime);
+
+      tl.to(sprite.scale, {
+        x: letterCfg.finalScale,
+        y: letterCfg.finalScale,
+        duration: letterCfg.flightDuration * 0.35,
+        ease: "power2.out"
+      }, launchTime + letterCfg.flightDuration * 0.65);
+
+      tl.to(mat, {
+        opacity: 1,
+        duration: Math.min(0.18, letterCfg.flightDuration * 0.25),
+        ease: "power1.out"
+      }, launchTime);
+
+      const arcState = { t: 0 };
+      tl.to(arcState, {
+        t: 1,
+        duration: letterCfg.flightDuration,
+        ease: "none",
+        onUpdate: () => {
+          sprite.position.y = letterCfg.baselineY + Math.sin(arcState.t * Math.PI) * sprite.userData.arcHeight;
+        }
+      }, launchTime);
     });
 
     // A) Blank paper (0.00–0.60): do nothing
@@ -431,7 +579,7 @@
     // I) Reparent into assemblyGroup at 5.00, then rotate group 5.00–6.00
     tl.call(() => {
       // Set pivot at T (already), then reparent all while preserving world transforms
-      assemblyGroup.position.copy(T);
+      assemblyGroup.position.copy(titleAnchor);
       assemblyGroup.rotation.set(0, 0, 0);
 
       reparentPreserveWorld(ornamentL.group, assemblyGroup);
@@ -439,6 +587,15 @@
       reparentPreserveWorld(cap.mesh, assemblyGroup);
     }, [], tI0);
 
+    tl.to(titleAnchor, {
+      x: -4.0,
+      duration: (tI1 - tI0),
+      ease: "power2.inOut",
+      onUpdate: () => {
+        assemblyGroup.position.copy(titleAnchor);
+      }
+    }, tI0);
+    
     tl.to(assemblyGroup.rotation, {
       y: groupYawTotal,
       duration: (tI1 - tI0),
