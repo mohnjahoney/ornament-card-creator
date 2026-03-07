@@ -77,7 +77,8 @@
   const tF0 = 3.20, tF1 = 4.00;
   const tG0 = 4.00, tG1 = 4.60;
   const tH0 = 4.60, tH1 = 5.00;
-  const tI0 = 5.00, tI1 = 8.00;
+  const tI0 = 5.00, tI1 = 6.00;
+  const tJ0 = 6.00, tJ1 = 7.00;
 
   // -------------------------
   // Title letter config
@@ -85,7 +86,7 @@
   const titleLetters = ["r", "n", "a", "m", "e", "n", "t", " ", "M", "a", "k", "e", "r"];
 
   const letterCfg = {
-    baselineY: 0,
+    baselineY: -2,
     finalZ: zAssemble + 0.02,
 
     // sequenceStart: 5.15,     // seconds on the GSAP timeline
@@ -93,15 +94,15 @@
     // launchDelay: 0.08,       // overlap between letters
 
     sequenceStart: 5.0,     // seconds on the GSAP timeline
-    flightDuration: 2,     // seconds per letter
-    launchDelay: 0.3,       // overlap between letters
+    flightDuration: 0.2,     // seconds per letter
+    launchDelay: 0.1,       // overlap between letters
 
-    startScale: 0.18,
+    startScale: 3.0, //0.18,
     // finalScale: 0.62,
     finalScale: 3.0,
-    arcHeight: 0.35,
+    arcHeight: 1,
 
-    spacing: 0.52,
+    spacing: 0.7,
     wordGapExtra: 0.30,
 
     spawnOffsetX: 0.10,
@@ -349,7 +350,7 @@
     ctx.fillStyle = "#f6f6f4";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = "bold 320px Arial";
+    ctx.font = "bold 220px Arial";
     ctx.fillText(char, canvas.width / 2, canvas.height / 2 + 8);
 
     const texture = new THREE.CanvasTexture(canvas);
@@ -370,7 +371,7 @@
   function createTitleLetters() {
     letterGroup.clear();
 
-    let cursorX = titleAnchor.x + 0.62;
+    let cursorX = 0.62;
 
     for (const ch of titleLetters) {
       if (ch === " ") {
@@ -381,11 +382,15 @@
       const sprite = makeLetterSprite(ch);
 
       sprite.position.set(
-        titleAnchor.x + letterCfg.spawnOffsetX,
-        titleAnchor.y + letterCfg.spawnOffsetY,
-        titleAnchor.z + letterCfg.spawnOffsetZ
+        // titleAnchor.x + letterCfg.spawnOffsetX,
+        // titleAnchor.y + letterCfg.spawnOffsetY,
+        // titleAnchor.z + letterCfg.spawnOffsetZ
+        letterCfg.spawnOffsetX,
+        letterCfg.spawnOffsetY,
+        letterCfg.spawnOffsetZ
       );
       sprite.userData.targetX = cursorX;
+      // sprite.userData.targetX = cursorX - titleAnchor.x;
       sprite.userData.targetY = letterCfg.baselineY;
       sprite.userData.targetZ = letterCfg.finalZ;
       sprite.userData.arcHeight = letterCfg.arcHeight;
@@ -424,7 +429,7 @@
     outlineMats.forEach(m => m.opacity = 0);
 
     tl = gsap.timeline({
-      defaults: { overwrite: true },
+      defaults: { overwrite: false },
       duration: 6.0
     });
 
@@ -434,15 +439,17 @@
 
       tl.call(() => {
         sprite.position.set(
-          titleAnchor.x + letterCfg.spawnOffsetX,
-          titleAnchor.y + letterCfg.spawnOffsetY,
-          titleAnchor.z + letterCfg.spawnOffsetZ
+          -titleAnchor.x,
+          -titleAnchor.y,
+          -titleAnchor.z
         );
         sprite.scale.set(letterCfg.startScale, letterCfg.startScale, 1);
         mat.opacity = 0;
       }, [], launchTime);
 
       tl.to(sprite.position, {
+        // x: sprite.userData.targetX,
+        // x: () => sprite.userData.currentTargetX,
         x: sprite.userData.targetX,
         z: sprite.userData.targetZ,
         duration: letterCfg.flightDuration,
@@ -580,6 +587,7 @@
     tl.call(() => {
       // Set pivot at T (already), then reparent all while preserving world transforms
       assemblyGroup.position.copy(titleAnchor);
+      letterGroup.position.copy(titleAnchor);
       assemblyGroup.rotation.set(0, 0, 0);
 
       reparentPreserveWorld(ornamentL.group, assemblyGroup);
@@ -593,6 +601,8 @@
       ease: "power2.inOut",
       onUpdate: () => {
         assemblyGroup.position.copy(titleAnchor);
+        letterGroup.position.copy(titleAnchor);
+        outlineGroup.position.copy(titleAnchor);
       }
     }, tI0);
     
@@ -608,6 +618,12 @@
       duration: 0.4,
       ease: "power1.out"
     }, 5.2);
+
+    tl.to(assemblyGroup.rotation, {
+      y: 0,
+      duration: (tJ1 - tJ0),
+      ease: "power2.inOut"
+    }, tJ0);
 
     // Play once; set to repeat(-1) if you want looping
     tl.play(0);
