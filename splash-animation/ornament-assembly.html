@@ -1,19 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>Paper Cutout Assembly (Three.js + GSAP)</title>
   <style>
-    html, body { margin:0; height:100%; background:#0b0b0c; overflow:hidden; }
-    #ui {
-      position:fixed; left:12px; top:12px; color:#ddd; font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      font-size:12px; background:rgba(0,0,0,0.35); padding:10px 12px; border-radius:10px;
-      line-height:1.3;
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      background: #0b0b0c;
+      overflow: hidden;
     }
-    #ui button { margin-top:8px; padding:6px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:#111; color:#ddd; cursor:pointer; }
-    #ui button:hover { background:#171717; }
+
+    #ui {
+      position: fixed;
+      left: 12px;
+      top: 12px;
+      color: #ddd;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 10px 12px;
+      border-radius: 10px;
+      line-height: 1.3;
+    }
+
+    #ui button {
+      margin-top: 8px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: #111;
+      color: #ddd;
+      cursor: pointer;
+    }
+
+    #ui button:hover {
+      background: #171717;
+    }
   </style>
 </head>
+
 <body>
   <div id="ui">
     <div><b>Paper Cutout Assembly</b></div>
@@ -21,638 +49,744 @@
     <button id="restart">Restart</button>
   </div>
 
-<script type="module">
-  import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
-//   import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
-//   import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js";
-//   import gsap from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/index.js";
-  import { gsap } from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm";
-  
-  // -------------------------
-  // Constants (tweak here)
-  // -------------------------
-  const R  = 1.0;          // ornament radius
-  const Rc = 0.35 * R;     // cap radius
+  <script type="module">
+    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+    //   import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+    //   import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js";
+    //   import gsap from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/index.js";
+    import { gsap } from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm";
 
-  const paperW = 6.0;
-  const paperH = 4.0;
+    // -------------------------
+    // Constants (tweak here)
+    // -------------------------
+    const ornamentRad = 1.0;          // ornament radius
+    const capRad = 0.45 * ornamentRad;     // cap radius
 
-  const zLift = 0.25 * R;
-  const zAssemble = 0.60; // slightly above paper
-  const T  = new THREE.Vector3(0, 0, zAssemble);
-  const Ta = new THREE.Vector3(0, 3*R, zAssemble);
-  const Tc = new THREE.Vector3(0, 0.6*Rc, zAssemble);
+    const paperW = 6.0;
+    const paperH = 4.0;
 
-  // title anchor is location of the "O"
-  const titleAnchor = new THREE.Vector3(0, 0, zAssemble);
+    const zLift = 0.25 * ornamentRad;
+    const zAssemble = 0.60; // slightly above paper
+    const T = new THREE.Vector3(0, 0, zAssemble);
+    const Ta = new THREE.Vector3(0, 3 * ornamentRad, zAssemble);
+    // const Tc = new THREE.Vector3(0, 0.6 * capRad, zAssemble);
+    const Tc = new THREE.Vector3(0, 0.96*ornamentRad, zAssemble);
+
+    // title anchor is location of the "O"
+    const titleAnchor = new THREE.Vector3(0, 0, zAssemble);
 
 
-  const L0 = new THREE.Vector3(-1.6*R, 0, 0);
-  const R0 = new THREE.Vector3(+1.6*R, 0, 0);
-  const C0 = new THREE.Vector3(0, paperH/2 - 0.8*R, 0);
+    const L0 = new THREE.Vector3(-1.6 * ornamentRad, 0, 0);
+    const R0 = new THREE.Vector3(+1.6 * ornamentRad, 0, 0);
+    const C0 = new THREE.Vector3(0, paperH / 2 - 0.8 * ornamentRad, 0);
 
-  // Lifted positions (end of Phase C)
-  const L1 = L0.clone().add(new THREE.Vector3(-0.1*R, -0.05*R, zLift));
-  const R1 = R0.clone().add(new THREE.Vector3(+0.1*R, -0.05*R, zLift));
-  const C1 = C0.clone().add(new THREE.Vector3(0, +0.05*R, zLift));
+    // Lifted positions (end of Phase C)
+    const L1 = L0.clone().add(new THREE.Vector3(-0.1 * ornamentRad, -0.05 * ornamentRad, zLift));
+    const R1 = R0.clone().add(new THREE.Vector3(+0.1 * ornamentRad, -0.05 * ornamentRad, zLift));
+    const C1 = C0.clone().add(new THREE.Vector3(0, +0.05 * ornamentRad, zLift));
 
-  // Quadratic Bezier control points
-  const Lc = new THREE.Vector3(-0.6*R, +1.2*R, zLift + 0.4*R);
-  const RcC= new THREE.Vector3(+0.6*R, +1.8*R, zLift + 0.4*R);
-  const Cc = new THREE.Vector3(0, +2.2*R, zLift + 0.6*R);
+    // Quadratic Bezier control points
+    const Lc = new THREE.Vector3(-0.6 * ornamentRad, +1.2 * ornamentRad, zLift + 0.4 * ornamentRad);
+    const RcC = new THREE.Vector3(+0.6 * ornamentRad, +1.8 * ornamentRad, zLift + 0.4 * ornamentRad);
+    const Cc = new THREE.Vector3(0, +2.2 * ornamentRad, zLift + 0.6 * ornamentRad);
 
-  // Rotation totals
-  const deg = (d) => d * Math.PI / 180;
-  const leftYawTotal  = deg(405);
-  const rightYawTotal = deg(135);
-  const capPitchTotal = deg(450);
-  const groupYawTotal = deg(360);
+    // Rotation totals
+    const deg = (d) => d * Math.PI / 180;
+    const leftYawTotal = deg(585);
+    const rightYawTotal = deg(135);
+    const capPitchTotal = deg(450);
+    const groupYawTotal = deg(360);
 
-  // Timeline phase boundaries (seconds)
-  const tA0 = 0.00, tA1 = 0.60;
-  const tB0 = 0.60, tB1 = 1.20;
-  const tC0 = 1.20, tC1 = 1.80;
-  const tD0 = 1.80, tD1 = 3.20;
-  const tE0 = 3.20, tE1 = 3.60;
-  const tF0 = 3.20, tF1 = 4.00;
-  const tG0 = 4.00, tG1 = 4.60;
-  const tH0 = 4.60, tH1 = 5.00;
-  const tI0 = 5.00, tI1 = 6.00;
-  const tJ0 = 6.00, tJ1 = 7.00;
+    // Timeline phase boundaries (seconds)
+    const tA0 = 0.00, tA1 = 0.60;
+    const tB0 = 0.60, tB1 = 1.20;
+    const tC0 = 1.20, tC1 = 1.80;
+    const tD0 = 1.80, tD1 = 3.20;
+    const tE0 = 3.20, tE1 = 3.60;
+    const tF0 = 3.20, tF1 = 4.00;
+    const tG0 = 4.00, tG1 = 4.60;
+    const tH0 = 4.60, tH1 = 5.00;
+    const tI0 = 5.00, tI1 = 6.00;
+    const tJ0 = 6.00, tJ1 = 7.00;
+    const tK0 = 7.00, tK1 = 100.00;
 
-  // -------------------------
-  // Title letter config
-  // -------------------------
-  const titleLetters = ["r", "n", "a", "m", "e", "n", "t", " ", "M", "a", "k", "e", "r"];
+    // -------------------------
+    // Title letter config
+    // -------------------------
+    const titleLetters = ["r", "n", "a", "m", "e", "n", "t", " ", "M", "a", "k", "e", "r"];
 
-  const letterCfg = {
-    baselineY: -2,
-    finalZ: zAssemble + 0.02,
+    const letterCfg = {
+      baselineY: 0,
+      finalZ: zAssemble + 0.02,
 
-    // sequenceStart: 5.15,     // seconds on the GSAP timeline
-    // flightDuration: 0.9,     // seconds per letter
-    // launchDelay: 0.08,       // overlap between letters
+      // sequenceStart: 5.15,     // seconds on the GSAP timeline
+      // flightDuration: 0.9,     // seconds per letter
+      // launchDelay: 0.08,       // overlap between letters
 
-    sequenceStart: 5.0,     // seconds on the GSAP timeline
-    flightDuration: 0.2,     // seconds per letter
-    launchDelay: 0.1,       // overlap between letters
+      sequenceStart: 5.0,     // seconds on the GSAP timeline
+      flightDuration: 0.2,     // seconds per letter
+      launchDelay: 0.1,       // overlap between letters
 
-    startScale: 3.0, //0.18,
-    // finalScale: 0.62,
-    finalScale: 3.0,
-    arcHeight: 1,
+      startScale: 3.0, //0.18,
+      // finalScale: 0.62,
+      finalScale: 3.0,
+      arcHeight: 1,
 
-    spacing: 0.7,
-    wordGapExtra: 0.30,
+      spacing: 0.7,
+      widthScale: 0.006,
+      tracking: 0.0,
+      wordGapExtra: 0.0,
 
-    spawnOffsetX: 0.10,
-    spawnOffsetY: 0,
-    spawnOffsetZ: -0.35,
-  };
+      spawnOffsetX: 0.10,
+      spawnOffsetY: 0,
+      spawnOffsetZ: -0.35,
+    };
 
-  // -------------------------
-  // Three.js scene setup
-  // -------------------------
-  const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x0b0b0c, 10, 30);
+    // -------------------------
+    // Three.js scene setup
+    // -------------------------
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x0b0b0c, 10, 30);
 
-  const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, 0.6, 10);
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0.6, 10);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  document.body.appendChild(renderer.domElement);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    document.body.appendChild(renderer.domElement);
 
-//   const controls = new OrbitControls(camera, renderer.domElement);
-//   controls.enableDamping = true;
-//   controls.enabled = false; // keep camera fixed for the spec; toggle true if you want to inspect
+    //   const controls = new OrbitControls(camera, renderer.domElement);
+    //   controls.enableDamping = true;
+    //   controls.enabled = false; // keep camera fixed for the spec; toggle true if you want to inspect
 
-  // Lights (simple but readable)
-  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-  const dir = new THREE.DirectionalLight(0xffffff, 0.8);
-  dir.position.set(3, 5, 6);
-  scene.add(dir);
+    // Lights (simple but readable)
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(3, 5, 6);
+    scene.add(dir);
 
-  // Subtle back light for edge definition
-  const rim = new THREE.DirectionalLight(0xffffff, 0.35);
-  rim.position.set(-4, 2, -6);
-  scene.add(rim);
+    // Subtle back light for edge definition
+    const rim = new THREE.DirectionalLight(0xffffff, 0.35);
+    rim.position.set(-4, 2, -6);
+    scene.add(rim);
 
-  // -------------------------
-  // Materials
-  // -------------------------
-  const paperMat = new THREE.MeshStandardMaterial({
-    color: 0xf2f2f0,
-    roughness: 0.95,
-    metalness: 0.0
-  });
-
-  const pieceMat = new THREE.MeshStandardMaterial({
-    color: 0xf6f6f4,
-    roughness: 0.85,
-    metalness: 0.0,
-    polygonOffset: true,
-    polygonOffsetFactor: 1,
-    polygonOffsetUnits: 1
-  });
-
-  const outlineMat = new THREE.LineBasicMaterial({
-    color: 0x222222,
-    transparent: true,
-    opacity: 0.0
-  });
-
-  // -------------------------
-  // Helpers: shapes + outlines
-  // -------------------------
-  function roundedRectPath(x, y, w, h, r) {
-    // returns a THREE.Shape path (not closed automatically)
-    const s = new THREE.Shape();
-    s.moveTo(x + r, y);
-    s.lineTo(x + w - r, y);
-    s.quadraticCurveTo(x + w, y, x + w, y + r);
-    s.lineTo(x + w, y + h - r);
-    s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    s.lineTo(x + r, y + h);
-    s.quadraticCurveTo(x, y + h, x, y + h - r);
-    s.lineTo(x, y + r);
-    s.quadraticCurveTo(x, y, x + r, y);
-    return s;
-  }
-
-  function makeOrnamentShape() {
-    // Main circle at (0,0) radius R
-    const shape = new THREE.Shape();
-    shape.absarc(0, 0, R, 0, Math.PI * 2, false);
-
-    // Bump parameters
-    const bumpW = 0.9 * R;
-    const bumpH = 0.5 * R;
-    const bumpRad = 0.2 * R;
-    const overlap = 0.1 * R;
-
-    const bx = -bumpW / 2;
-    const by = (R - overlap); // bottom of bump overlaps the circle slightly
-
-    const bump = roundedRectPath(bx, by, bumpW, bumpH, bumpRad);
-
-    // Union by adding as a "hole"? Not correct.
-    // Instead: append bump contour to main shape (same fill area).
-    // Three.js Shape supports multiple subpaths by using shape.holes for subtraction,
-    // but for union we can just add bump as a separate shape and extrude both in a group.
-    // We'll return both shapes and merge visually by stacking in same mesh via ShapeGeometry is tricky.
-    // For v1 visual: create one combined Shape by tracing circle + bump as a single contour is complex.
-    // Practical approach: extrude circle and bump as a single geometry via ShapeUtils isn't built-in union.
-    // So: build ornament as a Group of two extrusions that look fused.
-
-    return { circleShape: shape, bumpShape: bump };
-  }
-
-  function extrudeShape(shape, depth = 0.06) {
-    const geo = new THREE.ExtrudeGeometry(shape, {
-      depth,
-      bevelEnabled: false,
-      curveSegments: 64,
-      steps: 1
+    // -------------------------
+    // Materials
+    // -------------------------
+    const paperMat = new THREE.MeshStandardMaterial({
+      color: 0xf2f2f0,
+      roughness: 0.95,
+      metalness: 0.0
     });
-    // Center in Z around 0 (so it rotates like a "coin" around its midplane)
-    geo.translate(0, 0, -depth / 2);
-    return geo;
-  }
 
-  function lineFromShape(shape) {
-    const pts = shape.getPoints(128);
-    const geo = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p.x, p.y, 0.001)));
-    return new THREE.LineLoop(geo, outlineMat.clone());
-  }
+    // use image instead of color applied to ornament
+    const ornamentTextureLoaderALeft = new THREE.TextureLoader();
 
-  // -------------------------
-  // Build paper
-  // -------------------------
-  const paperGeo = new THREE.PlaneGeometry(paperW, paperH, 1, 1);
-  const paper = new THREE.Mesh(paperGeo, paperMat);
-  paper.position.set(0, 0, 0);
-  scene.add(paper);
+    const ornamentTextureALeft = ornamentTextureLoaderALeft.load("mahoneyCardALeft.png");
 
-  // Optional: dark backing plane for contrast
-  const backing = new THREE.Mesh(
-    new THREE.PlaneGeometry(paperW * 1.35, paperH * 1.35),
-    new THREE.MeshStandardMaterial({ color: 0x101012, roughness: 1 })
-  );
-  backing.position.set(0, 0, -0.08);
-  scene.add(backing);
+    const ornamentTextureLoaderARight = new THREE.TextureLoader();
 
-  // -------------------------
-  // Build cutouts + outlines
-  // -------------------------
-  // Ornament piece = group of (circle extrusion + bump extrusion) so it looks like a single fused piece.
-  function makeOrnamentPiece() {
-    const { circleShape, bumpShape } = makeOrnamentShape();
-    const g = new THREE.Group();
+    const ornamentTextureARight = ornamentTextureLoaderARight.load("mahoneyCardARight.png");
 
-    const circleMesh = new THREE.Mesh(extrudeShape(circleShape, 0.08), pieceMat);
-    const bumpMesh   = new THREE.Mesh(extrudeShape(bumpShape, 0.08), pieceMat);
+    // use image instead of color applied to ornament
+    const capTextureLoader = new THREE.TextureLoader();
 
-    g.add(circleMesh);
-    g.add(bumpMesh);
+    const capTexture = capTextureLoader.load("mahoneyCardCap.png");
 
-    // Pivot at main circle center is already (0,0,0)
-    return { group: g, circleShape, bumpShape };
-  }
+    // const capMat = new THREE.MeshStandardMaterial({
+    //   map: capTexture,
+    //   roughness: 0.8,
+    //   metalness: 0.0
+    // });
 
-  function makeCapPiece() {
-    const s = new THREE.Shape();
-    s.absarc(0, 0, Rc, 0, Math.PI*2, false);
-    const mesh = new THREE.Mesh(extrudeShape(s, 0.07), pieceMat);
-    return { mesh, shape: s };
-  }
+    // This colors the ornament with a simple color
+    // const pieceMat = new THREE.MeshStandardMaterial({
+    //   // color: 0xf6f6f4, // gray
+    //   color: 0xff4444,
+    //   roughness: 0.85,
+    //   metalness: 0.0,
+    //   polygonOffset: true,
+    //   polygonOffsetFactor: 1,
+    //   polygonOffsetUnits: 1
+    // });
 
-  const ornamentL = makeOrnamentPiece();
-  const ornamentR = makeOrnamentPiece();
-  const cap = makeCapPiece();
-
-  // Place pieces initially on the paper (flat, z=0)
-  ornamentL.group.position.copy(L0);
-  ornamentR.group.position.copy(R0);
-  cap.mesh.position.copy(C0);
-
-  // Rotations initial
-  ornamentL.group.rotation.set(0, 0, 0);
-  ornamentR.group.rotation.set(0, 0, 0);
-  cap.mesh.rotation.set(0, 0, 0);
-
-  scene.add(ornamentL.group, ornamentR.group, cap.mesh);
-
-  // Outlines drawn on the paper surface (z slightly above paper)
-  const outlineGroup = new THREE.Group();
-  outlineGroup.position.set(0, 0, 0);
-
-  // For ornament outline, draw both circle and bump as separate loops (still reads well in v1)
-  const oL_circleLine = lineFromShape(ornamentL.circleShape);
-  const oL_bumpLine   = lineFromShape(ornamentL.bumpShape);
-  oL_circleLine.position.copy(L0); oL_bumpLine.position.copy(L0);
-
-  const oR_circleLine = lineFromShape(ornamentR.circleShape);
-  const oR_bumpLine   = lineFromShape(ornamentR.bumpShape);
-  oR_circleLine.position.copy(R0); oR_bumpLine.position.copy(R0);
-
-  const capLine = lineFromShape(cap.shape);
-  capLine.position.copy(C0);
-
-  outlineGroup.add(oL_circleLine, oL_bumpLine, oR_circleLine, oR_bumpLine, capLine);
-  scene.add(outlineGroup);
-
-  // Collect outline materials for fading
-  const outlineMats = outlineGroup.children.map(line => line.material);
-
-  // -------------------------
-  // Curves
-  // -------------------------
-  const leftCurve  = new THREE.QuadraticBezierCurve3(L1.clone(), Lc.clone(), T.clone());
-  const rightCurve = new THREE.QuadraticBezierCurve3(R1.clone(), RcC.clone(), Ta.clone());
-  const capCurve   = new THREE.QuadraticBezierCurve3(C1.clone(), Cc.clone(), Ta.clone());
-
-  // -------------------------
-  // Reparent helper (preserve world transform)
-  // -------------------------
-  function reparentPreserveWorld(obj, newParent) {
-    obj.updateMatrixWorld(true);
-    newParent.updateMatrixWorld(true);
-
-    const worldMatrix = obj.matrixWorld.clone();
-    const invParentWorld = new THREE.Matrix4().copy(newParent.matrixWorld).invert();
-
-    obj.parent.remove(obj);
-    newParent.add(obj);
-
-    const localMatrix = new THREE.Matrix4().multiplyMatrices(invParentWorld, worldMatrix);
-    localMatrix.decompose(obj.position, obj.quaternion, obj.scale);
-  }
-
-  // Assembly group (pivot at T)
-  const assemblyGroup = new THREE.Group();
-  const letterGroup = new THREE.Group();
-  assemblyGroup.position.copy(T);
-  scene.add(assemblyGroup);
-  scene.add(letterGroup);
-
-  // -------------------------
-  // Title letter helpers
-  // -------------------------
-  function makeLetterSprite(char) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 512;
-
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#f6f6f4";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "bold 220px Arial";
-    ctx.fillText(char, canvas.width / 2, canvas.height / 2 + 8);
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.generateMipmaps = false;
-
-    const material = new THREE.SpriteMaterial({
-      map: texture,
+    const outlineMat = new THREE.LineBasicMaterial({
+      color: 0x222222,
       transparent: true,
-      opacity: 0,
+      opacity: 0.0
     });
 
-    const sprite = new THREE.Sprite(material);
-    sprite.scale.set(letterCfg.startScale, letterCfg.startScale, 1);
-    return sprite;
-  }
-
-  function createTitleLetters() {
-    letterGroup.clear();
-
-    let cursorX = 0.62;
-
-    for (const ch of titleLetters) {
-      if (ch === " ") {
-        cursorX += letterCfg.spacing + letterCfg.wordGapExtra;
-        continue;
-      }
-
-      const sprite = makeLetterSprite(ch);
-
-      sprite.position.set(
-        // titleAnchor.x + letterCfg.spawnOffsetX,
-        // titleAnchor.y + letterCfg.spawnOffsetY,
-        // titleAnchor.z + letterCfg.spawnOffsetZ
-        letterCfg.spawnOffsetX,
-        letterCfg.spawnOffsetY,
-        letterCfg.spawnOffsetZ
-      );
-      sprite.userData.targetX = cursorX;
-      // sprite.userData.targetX = cursorX - titleAnchor.x;
-      sprite.userData.targetY = letterCfg.baselineY;
-      sprite.userData.targetZ = letterCfg.finalZ;
-      sprite.userData.arcHeight = letterCfg.arcHeight;
-
-      letterGroup.add(sprite);
-      cursorX += letterCfg.spacing;
+    // -------------------------
+    // Helpers: shapes + outlines
+    // -------------------------
+    function roundedRectPath(x, y, w, h, r) {
+      // returns a THREE.Shape path (not closed automatically)
+      const s = new THREE.Shape();
+      s.moveTo(x + r, y);
+      s.lineTo(x + w - r, y);
+      s.quadraticCurveTo(x + w, y, x + w, y + r);
+      s.lineTo(x + w, y + h - r);
+      s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      s.lineTo(x + r, y + h);
+      s.quadraticCurveTo(x, y + h, x, y + h - r);
+      s.lineTo(x, y + r);
+      s.quadraticCurveTo(x, y, x + r, y);
+      return s;
     }
-  }
 
-  // -------------------------
-  // GSAP Timeline (total 6.0s)
-  // -------------------------
-  let tl;
+    function makeOrnamentShape() {
+      // Main circle at (0,0) radius R
+      const shape = new THREE.Shape();
+      shape.absarc(0, 0, ornamentRad, 0, Math.PI * 2, false);
 
-  function buildTimeline() {
-    if (tl) tl.kill();
+      // Bump parameters
+      const bumpW = 0.6 * ornamentRad;
+      const bumpH = 0.8 * ornamentRad;
+      const bumpRad = 0.2 * ornamentRad;
+      const overlap = 0.4 * ornamentRad;
 
-    // Reset state
+      const bx = -bumpW / 2;
+      const by = (ornamentRad - overlap); // bottom of bump overlaps the circle slightly
+
+      const bump = roundedRectPath(bx, by, bumpW, bumpH, bumpRad);
+
+      // Union by adding as a "hole"? Not correct.
+      // Instead: append bump contour to main shape (same fill area).
+      // Three.js Shape supports multiple subpaths by using shape.holes for subtraction,
+      // but for union we can just add bump as a separate shape and extrude both in a group.
+      // We'll return both shapes and merge visually by stacking in same mesh via ShapeGeometry is tricky.
+      // For v1 visual: create one combined Shape by tracing circle + bump as a single contour is complex.
+      // Practical approach: extrude circle and bump as a single geometry via ShapeUtils isn't built-in union.
+      // So: build ornament as a Group of two extrusions that look fused.
+
+      return { circleShape: shape, bumpShape: bump };
+    }
+
+    function extrudeShape(shape, depth = 0.06) {
+      const geo = new THREE.ExtrudeGeometry(shape, {
+        depth,
+        bevelEnabled: false,
+        curveSegments: 64,
+        steps: 1
+      });
+      // Center in Z around 0 (so it rotates like a "coin" around its midplane)
+      geo.translate(0, 0, -depth / 2);
+      return geo;
+    }
+
+    function lineFromShape(shape) {
+      const pts = shape.getPoints(128);
+      const geo = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p.x, p.y, 0.001)));
+      return new THREE.LineLoop(geo, outlineMat.clone());
+    }
+
+    // -------------------------
+    // Build paper
+    // -------------------------
+    const paperGeo = new THREE.PlaneGeometry(paperW, paperH, 1, 1);
+    const paper = new THREE.Mesh(paperGeo, paperMat);
+    paper.position.set(0, 0, 0);
+    scene.add(paper);
+
+    // Optional: dark backing plane for contrast
+    const backing = new THREE.Mesh(
+      new THREE.PlaneGeometry(paperW * 1.35, paperH * 1.35),
+      new THREE.MeshStandardMaterial({ color: 0x101012, roughness: 1 })
+    );
+    backing.position.set(0, 0, -0.08);
+    scene.add(backing);
+
+    // -------------------------
+    // Build cutouts + outlines
+    // -------------------------
+    // Ornament piece = group of (circle extrusion + bump extrusion) so it looks like a single fused piece.
+    function makeOrnamentPiece(texture) {
+
+      // texture.center.set(0.1, 0.1);
+      texture.offset.set(0.5, 0.5);
+      texture.repeat.set(0.5, 0.5);
+
+      const mat = new THREE.MeshStandardMaterial({
+        map: texture,
+        roughness: 0.85,
+        metalness: 0.0,
+        polygonOffset: true,
+        polygonOffsetFactor: 1,
+        polygonOffsetUnits: 1
+      });
+
+      const { circleShape, bumpShape } = makeOrnamentShape();
+      const g = new THREE.Group();
+
+      const circleMesh = new THREE.Mesh(extrudeShape(circleShape, 0.08), mat);
+      const bumpMesh = new THREE.Mesh(extrudeShape(bumpShape, 0.08), mat);
+
+      g.add(circleMesh);
+      g.add(bumpMesh);
+
+      // Pivot at main circle center is already (0,0,0)
+      return { group: g, circleShape, bumpShape };
+    }
+
+    function makeCapPiece(texture) {
+
+      const mat = new THREE.MeshStandardMaterial({
+        map: texture,
+        roughness: 0.85,
+        metalness: 0.0
+      });
+
+      const s = new THREE.Shape();
+      s.absarc(0, 0, capRad, 0, Math.PI * 2, false);
+      const mesh = new THREE.Mesh(extrudeShape(s, 0.07), mat);
+      return { mesh, shape: s };
+    }
+
+    const ornamentL = makeOrnamentPiece(ornamentTextureALeft);
+    const ornamentR = makeOrnamentPiece(ornamentTextureARight);
+    const cap = makeCapPiece(capTexture);
+
+    // Place pieces initially on the paper (flat, z=0)
     ornamentL.group.position.copy(L0);
     ornamentR.group.position.copy(R0);
     cap.mesh.position.copy(C0);
 
+    // Rotations initial
     ornamentL.group.rotation.set(0, 0, 0);
     ornamentR.group.rotation.set(0, 0, 0);
     cap.mesh.rotation.set(0, 0, 0);
 
-    assemblyGroup.rotation.set(0, 0, 0);
-    createTitleLetters();
+    scene.add(ornamentL.group, ornamentR.group, cap.mesh);
 
-    // Ensure pieces are direct children of scene pre-Phase I
-    if (ornamentL.group.parent !== scene) reparentPreserveWorld(ornamentL.group, scene);
-    if (ornamentR.group.parent !== scene) reparentPreserveWorld(ornamentR.group, scene);
-    if (cap.mesh.parent !== scene)       reparentPreserveWorld(cap.mesh, scene);
+    // Outlines drawn on the paper surface (z slightly above paper)
+    const outlineGroup = new THREE.Group();
+    outlineGroup.position.set(0, 0, 0);
 
-    // Outline opacity reset
-    outlineMats.forEach(m => m.opacity = 0);
+    // For ornament outline, draw both circle and bump as separate loops (still reads well in v1)
+    const oL_circleLine = lineFromShape(ornamentL.circleShape);
+    const oL_bumpLine = lineFromShape(ornamentL.bumpShape);
+    oL_circleLine.position.copy(L0); oL_bumpLine.position.copy(L0);
 
-    tl = gsap.timeline({
-      defaults: { overwrite: false },
-      duration: 6.0
-    });
+    const oR_circleLine = lineFromShape(ornamentR.circleShape);
+    const oR_bumpLine = lineFromShape(ornamentR.bumpShape);
+    oR_circleLine.position.copy(R0); oR_bumpLine.position.copy(R0);
 
-    letterGroup.children.forEach((sprite, index) => {
-      const launchTime = letterCfg.sequenceStart + index * letterCfg.launchDelay;
-      const mat = sprite.material;
+    const capLine = lineFromShape(cap.shape);
+    capLine.position.copy(C0);
 
-      tl.call(() => {
-        sprite.position.set(
-          -titleAnchor.x,
-          -titleAnchor.y,
-          -titleAnchor.z
-        );
-        sprite.scale.set(letterCfg.startScale, letterCfg.startScale, 1);
-        mat.opacity = 0;
-      }, [], launchTime);
+    outlineGroup.add(oL_circleLine, oL_bumpLine, oR_circleLine, oR_bumpLine, capLine);
+    scene.add(outlineGroup);
 
-      tl.to(sprite.position, {
-        // x: sprite.userData.targetX,
-        // x: () => sprite.userData.currentTargetX,
-        x: sprite.userData.targetX,
-        z: sprite.userData.targetZ,
-        duration: letterCfg.flightDuration,
-        ease: "power2.inOut"
-      }, launchTime);
+    // Collect outline materials for fading
+    const outlineMats = outlineGroup.children.map(line => line.material);
 
-      tl.to(sprite.scale, {
-        x: letterCfg.finalScale * 1.12,
-        y: letterCfg.finalScale * 1.12,
-        duration: letterCfg.flightDuration * 0.65,
-        ease: "back.out(1.7)"
-      }, launchTime);
+    // -------------------------
+    // Curves
+    // -------------------------
+    const leftCurve = new THREE.QuadraticBezierCurve3(L1.clone(), Lc.clone(), T.clone());
+    const rightCurve = new THREE.QuadraticBezierCurve3(R1.clone(), RcC.clone(), Ta.clone());
+    const capCurve = new THREE.QuadraticBezierCurve3(C1.clone(), Cc.clone(), Ta.clone());
 
-      tl.to(sprite.scale, {
-        x: letterCfg.finalScale,
-        y: letterCfg.finalScale,
-        duration: letterCfg.flightDuration * 0.35,
-        ease: "power2.out"
-      }, launchTime + letterCfg.flightDuration * 0.65);
+    // -------------------------
+    // Reparent helper (preserve world transform)
+    // -------------------------
+    function reparentPreserveWorld(obj, newParent) {
+      obj.updateMatrixWorld(true);
+      newParent.updateMatrixWorld(true);
 
-      tl.to(mat, {
-        opacity: 1,
-        duration: Math.min(0.18, letterCfg.flightDuration * 0.25),
-        ease: "power1.out"
-      }, launchTime);
+      const worldMatrix = obj.matrixWorld.clone();
+      const invParentWorld = new THREE.Matrix4().copy(newParent.matrixWorld).invert();
 
-      const arcState = { t: 0 };
-      tl.to(arcState, {
-        t: 1,
-        duration: letterCfg.flightDuration,
-        ease: "none",
-        onUpdate: () => {
-          sprite.position.y = letterCfg.baselineY + Math.sin(arcState.t * Math.PI) * sprite.userData.arcHeight;
+      obj.parent.remove(obj);
+      newParent.add(obj);
+
+      const localMatrix = new THREE.Matrix4().multiplyMatrices(invParentWorld, worldMatrix);
+      localMatrix.decompose(obj.position, obj.quaternion, obj.scale);
+    }
+
+    // Assembly group (pivot at T)
+    const assemblyGroup = new THREE.Group();
+    const letterGroup = new THREE.Group();
+    assemblyGroup.position.copy(T);
+    scene.add(assemblyGroup);
+    scene.add(letterGroup);
+
+    // -------------------------
+    // Title letter helpers
+    // -------------------------
+    function measureLetterWidth(char) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 512;
+
+      const ctx = canvas.getContext("2d");
+      ctx.font = "bold 220px Arial";
+      return ctx.measureText(char).width;
+    }
+
+    function makeLetterSprite(char) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 512;
+
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#f6f6f4";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "bold 220px Arial";
+      ctx.fillText(char, canvas.width / 2, canvas.height / 2 + 8);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.generateMipmaps = false;
+
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0,
+      });
+
+      const sprite = new THREE.Sprite(material);
+      // sprite.center.set(0, 0.5);
+      sprite.scale.set(letterCfg.startScale, letterCfg.startScale, 1);
+
+      // ---- DEBUG
+      // show sprite quad bounds ----
+      // const debugGeo = new THREE.PlaneGeometry(1, 1);
+      // const debugMat = new THREE.MeshBasicMaterial({
+      //   color: 0xff0000,
+      //   wireframe: true,
+      //   depthTest: false
+      // });
+
+      // const debugQuad = new THREE.Mesh(debugGeo, debugMat);
+
+      // // tiny z offset so it renders on top
+      // debugQuad.position.set(0, 0, 0.001);
+
+      // if (char == "a" || char == "m" || char == "e")
+      // sprite.add(debugQuad);
+
+      // ---- DEBUG
+      // show sprite center ----
+      // const debugGeo = new THREE.SphereGeometry(0.04, 8, 8);
+      // const debugMat = new THREE.MeshBasicMaterial({
+      //   color: 0xff0000,
+      //   wireframe: false,
+      //   depthTest: false
+      // });
+
+      // const debugDot = new THREE.Mesh(debugGeo, debugMat);
+      // debugDot.position.set(0, 0, 0.001);
+
+      // sprite.add(debugDot);
+      // ----------------------------------------
+
+      return sprite;
+    }
+
+    function createTitleLetters() {
+      letterGroup.clear();
+
+      let cursorX = 0.62;
+      let prevGlyphWidth = 1.2*ornamentRad;
+
+      for (const ch of titleLetters) {
+        if (ch === " ") {
+          const spaceWidth = measureLetterWidth(" ") * letterCfg.widthScale + letterCfg.wordGapExtra;
+          cursorX += prevGlyphWidth / 2;
+          cursorX += spaceWidth;
+          prevGlyphWidth = spaceWidth;
+          continue;
         }
-      }, launchTime);
-    });
 
-    // A) Blank paper (0.00–0.60): do nothing
+        const glyphWidth = measureLetterWidth(ch) * letterCfg.widthScale;
+        const sprite = makeLetterSprite(ch);
+        sprite.userData.glyphWidth = glyphWidth;
 
-    // B) Outlines appear (0.60–1.20)
-    tl.to(outlineMats, {
-      opacity: 1,
-      duration: (tB1 - tB0),
-      ease: "power1.inOut"
-    }, tB0);
+        cursorX += prevGlyphWidth / 2;
+        cursorX += glyphWidth / 2;
 
-    // C) Pieces lift out (1.20–1.80)
-    tl.to(ornamentL.group.position, { x: L1.x, y: L1.y, z: L1.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
-    tl.to(ornamentR.group.position, { x: R1.x, y: R1.y, z: R1.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
-    tl.to(cap.mesh.position,       { x: C1.x, y: C1.y, z: C1.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
+        sprite.position.set(
+          letterCfg.spawnOffsetX,
+          letterCfg.spawnOffsetY,
+          letterCfg.spawnOffsetZ
+        );
+        sprite.userData.targetX = cursorX;
+        sprite.userData.targetY = letterCfg.baselineY;
+        sprite.userData.targetZ = letterCfg.finalZ;
+        sprite.userData.arcHeight = letterCfg.arcHeight;
 
-    // Optional: dim outlines slightly after lift (helps "cut out" read)
-    tl.to(outlineMats, {
-      opacity: 0.35,
-      duration: 0.25,
-      ease: "power1.out"
-    }, tC1 - 0.10);
+        letterGroup.add(sprite);
 
-    // D) Travel on curves + spins (1.80–3.20)
-    const leftU  = { u: 0 };
-    const rightU = { u: 0 };
-
-    tl.to(leftU, {
-      u: 1,
-      duration: (tD1 - tD0),
-      ease: "power2.inOut",
-      onUpdate: () => {
-        const p = leftCurve.getPoint(leftU.u);
-        ornamentL.group.position.copy(p);
+        cursorX += letterCfg.tracking;
+        prevGlyphWidth = glyphWidth;
       }
-    }, tD0);
+    }
 
-    tl.to(rightU, {
-      u: 1,
-      duration: (tD1 - tD0),
-      ease: "power2.inOut",
-      onUpdate: () => {
-        const p = rightCurve.getPoint(rightU.u);
-        ornamentR.group.position.copy(p);
-      }
-    }, tD0);
+    // -------------------------
+    // GSAP Timeline (total 6.0s)
+    // -------------------------
+    let tl;
 
-    tl.to(ornamentL.group.rotation, {
-      y: leftYawTotal,
-      duration: (tD1 - tD0),
-      ease: "power2.inOut"
-    }, tD0);
+    function buildTimeline() {
+      if (tl) tl.kill();
 
-    tl.to(ornamentR.group.rotation, {
-      y: rightYawTotal,
-      duration: (tD1 - tD0),
-      ease: "power2.inOut"
-    }, tD0);
+      // Reset state
+      ornamentL.group.position.copy(L0);
+      ornamentR.group.position.copy(R0);
+      cap.mesh.position.copy(C0);
 
-    // E) Right drops Ta → T (3.20–3.60)
-    tl.to(ornamentR.group.position, {
-      x: T.x, y: T.y, z: T.z + 0.03, // tiny z offset to prevent fighting
-      duration: (tE1 - tE0),
-      ease: "power2.inOut"
-    }, tE0);
+      ornamentL.group.rotation.set(0, 0, 0);
+      ornamentR.group.rotation.set(0, 0, 0);
+      cap.mesh.rotation.set(0, 0, 0);
 
-    // F) Cap travels C → Ta (3.20–4.00)
-    const capU = { u: 0 };
-    tl.to(capU, {
-      u: 1,
-      duration: (tF1 - tF0),
-      ease: "power2.inOut",
-      onUpdate: () => {
-        const p = capCurve.getPoint(capU.u);
-        cap.mesh.position.copy(p);
-      }
-    }, tF0);
-
-    // G) Cap rotates +450° about local X (4.00–4.60)
-    tl.to(cap.mesh.rotation, {
-      x: capPitchTotal,
-      duration: (tG1 - tG0),
-      ease: "power2.inOut"
-    }, tG0);
-
-    // H) Cap moves Ta → Tc (4.60–5.00), stops short
-    tl.to(cap.mesh.position, {
-      x: Tc.x, y: Tc.y, z: Tc.z + 0.06, // tiny z offset
-      duration: (tH1 - tH0),
-      ease: "power2.out"
-    }, tH0);
-
-    // Ensure left is precisely at T by now (and offset slightly)
-    tl.to(ornamentL.group.position, {
-      x: T.x, y: T.y, z: T.z + 0.00,
-      duration: 0.001
-    }, tI0 - 0.001);
-
-    // I) Reparent into assemblyGroup at 5.00, then rotate group 5.00–6.00
-    tl.call(() => {
-      // Set pivot at T (already), then reparent all while preserving world transforms
-      assemblyGroup.position.copy(titleAnchor);
-      letterGroup.position.copy(titleAnchor);
       assemblyGroup.rotation.set(0, 0, 0);
+      createTitleLetters();
 
-      reparentPreserveWorld(ornamentL.group, assemblyGroup);
-      reparentPreserveWorld(ornamentR.group, assemblyGroup);
-      reparentPreserveWorld(cap.mesh, assemblyGroup);
-    }, [], tI0);
+      // Ensure pieces are direct children of scene pre-Phase I
+      if (ornamentL.group.parent !== scene) reparentPreserveWorld(ornamentL.group, scene);
+      if (ornamentR.group.parent !== scene) reparentPreserveWorld(ornamentR.group, scene);
+      if (cap.mesh.parent !== scene) reparentPreserveWorld(cap.mesh, scene);
 
-    tl.to(titleAnchor, {
-      x: -4.0,
-      duration: (tI1 - tI0),
-      ease: "power2.inOut",
-      onUpdate: () => {
+      // Outline opacity reset
+      outlineMats.forEach(m => m.opacity = 0);
+
+      tl = gsap.timeline({
+        defaults: { overwrite: false },
+        duration: 6.0
+      });
+
+      letterGroup.children.forEach((sprite, index) => {
+        const launchTime = letterCfg.sequenceStart + index * letterCfg.launchDelay;
+        const mat = sprite.material;
+
+        tl.call(() => {
+          sprite.position.set(
+            -titleAnchor.x,
+            -titleAnchor.y,
+            -titleAnchor.z
+          );
+          sprite.scale.set(letterCfg.startScale, letterCfg.startScale, 1);
+          mat.opacity = 0;
+        }, [], launchTime);
+
+        tl.to(sprite.position, {
+          // x: sprite.userData.targetX,
+          // x: () => sprite.userData.currentTargetX,
+          x: sprite.userData.targetX,
+          z: sprite.userData.targetZ,
+          duration: letterCfg.flightDuration,
+          ease: "power2.inOut"
+        }, launchTime);
+
+        tl.to(sprite.scale, {
+          x: letterCfg.finalScale * 1.12,
+          y: letterCfg.finalScale * 1.12,
+          duration: letterCfg.flightDuration * 0.65,
+          ease: "back.out(1.7)"
+        }, launchTime);
+
+        tl.to(sprite.scale, {
+          x: letterCfg.finalScale,
+          y: letterCfg.finalScale,
+          duration: letterCfg.flightDuration * 0.35,
+          ease: "power2.out"
+        }, launchTime + letterCfg.flightDuration * 0.65);
+
+        tl.to(mat, {
+          opacity: 1,
+          duration: Math.min(0.18, letterCfg.flightDuration * 0.25),
+          ease: "power1.out"
+        }, launchTime);
+
+        const arcState = { t: 0 };
+        tl.to(arcState, {
+          t: 1,
+          duration: letterCfg.flightDuration,
+          ease: "none",
+          onUpdate: () => {
+            sprite.position.y = letterCfg.baselineY + Math.sin(arcState.t * Math.PI) * sprite.userData.arcHeight;
+            // sprite.position.y = letterCfg.baselineY + Math.sin(arcState.t * Math.PI) * sprite.userData.arcHeight + 0.2*index;
+          }
+        }, launchTime);
+      });
+
+      // A) Blank paper (0.00–0.60): do nothing
+
+      // B) Outlines appear (0.60–1.20)
+      tl.to(outlineMats, {
+        opacity: 1,
+        duration: (tB1 - tB0),
+        ease: "power1.inOut"
+      }, tB0);
+
+      // C) Pieces lift out (1.20–1.80)
+      tl.to(ornamentL.group.position, { x: L1.x, y: L1.y, z: L1.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
+      tl.to(ornamentR.group.position, { x: R1.x, y: R1.y, z: R1.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
+      tl.to(cap.mesh.position, { x: C1.x, y: C1.y, z: C1.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
+
+      // Optional: dim outlines slightly after lift (helps "cut out" read)
+      tl.to(outlineMats, {
+        opacity: 0.35,
+        duration: 0.25,
+        ease: "power1.out"
+      }, tC1 - 0.10);
+
+      // D) Travel on curves + spins (1.80–3.20)
+      const leftU = { u: 0 };
+      const rightU = { u: 0 };
+
+      tl.to(leftU, {
+        u: 1,
+        duration: (tD1 - tD0),
+        ease: "power2.inOut",
+        onUpdate: () => {
+          const p = leftCurve.getPoint(leftU.u);
+          ornamentL.group.position.copy(p);
+        }
+      }, tD0);
+
+      tl.to(rightU, {
+        u: 1,
+        duration: (tD1 - tD0),
+        ease: "power2.inOut",
+        onUpdate: () => {
+          const p = rightCurve.getPoint(rightU.u);
+          ornamentR.group.position.copy(p);
+        }
+      }, tD0);
+
+      tl.to(ornamentL.group.rotation, {
+        y: leftYawTotal,
+        duration: (tD1 - tD0),
+        ease: "power2.inOut"
+      }, tD0);
+
+      tl.to(ornamentR.group.rotation, {
+        y: rightYawTotal,
+        duration: (tD1 - tD0),
+        ease: "power2.inOut"
+      }, tD0);
+
+      // E) Right drops Ta → T (3.20–3.60)
+      tl.to(ornamentR.group.position, {
+        x: T.x, y: T.y, z: T.z + 0.03, // tiny z offset to prevent fighting
+        duration: (tE1 - tE0),
+        ease: "power2.inOut"
+      }, tE0);
+
+      // F) Cap travels C → Ta (3.20–4.00)
+      const capU = { u: 0 };
+      tl.to(capU, {
+        u: 1,
+        duration: (tF1 - tF0),
+        ease: "power2.inOut",
+        onUpdate: () => {
+          const p = capCurve.getPoint(capU.u);
+          cap.mesh.position.copy(p);
+        }
+      }, tF0);
+
+      // G) Cap rotates +450° about local X (4.00–4.60)
+      tl.to(cap.mesh.rotation, {
+        x: capPitchTotal,
+        duration: (tG1 - tG0),
+        ease: "power2.inOut"
+      }, tG0);
+
+      // H) Cap moves Ta → Tc (4.60–5.00), stops short
+      tl.to(cap.mesh.position, {
+        x: Tc.x, y: Tc.y, z: Tc.z + 0.06, // tiny z offset
+        duration: (tH1 - tH0),
+        ease: "power2.out"
+      }, tH0);
+
+      // Ensure left is precisely at T by now (and offset slightly)
+      tl.to(ornamentL.group.position, {
+        x: T.x, y: T.y, z: T.z + 0.00,
+        duration: 0.001
+      }, tI0 - 0.001);
+
+      // I) Reparent into assemblyGroup at 5.00, then rotate group 5.00–6.00
+      tl.call(() => {
+        // Set pivot at T (already), then reparent all while preserving world transforms
         assemblyGroup.position.copy(titleAnchor);
         letterGroup.position.copy(titleAnchor);
-        outlineGroup.position.copy(titleAnchor);
-      }
-    }, tI0);
-    
-    tl.to(assemblyGroup.rotation, {
-      y: groupYawTotal,
-      duration: (tI1 - tI0),
-      ease: "power2.inOut"
-    }, tI0);
+        assemblyGroup.rotation.set(0, 0, 0);
 
-    // Optional: fade outlines out at end
-    tl.to(outlineMats, {
-      opacity: 0,
-      duration: 0.4,
-      ease: "power1.out"
-    }, 5.2);
+        reparentPreserveWorld(ornamentL.group, assemblyGroup);
+        reparentPreserveWorld(ornamentR.group, assemblyGroup);
+        reparentPreserveWorld(cap.mesh, assemblyGroup);
+      }, [], tI0);
 
-    tl.to(assemblyGroup.rotation, {
-      y: 0,
-      duration: (tJ1 - tJ0),
-      ease: "power2.inOut"
-    }, tJ0);
+      tl.to(titleAnchor, {
+        x: -5.0,
+        duration: (tI1 - tI0),
+        ease: "power2.inOut",
+        onUpdate: () => {
+          assemblyGroup.position.copy(titleAnchor);
+          letterGroup.position.copy(titleAnchor);
+          outlineGroup.position.copy(titleAnchor);
+        }
+      }, tI0);
 
-    // Play once; set to repeat(-1) if you want looping
-    tl.play(0);
-  }
+      tl.to(assemblyGroup.rotation, {
+        y: groupYawTotal,
+        duration: (tI1 - tI0),
+        ease: "power2.inOut"
+      }, tI0);
 
-  buildTimeline();
+      // Optional: fade outlines out at end
+      tl.to(outlineMats, {
+        opacity: 0,
+        duration: 0.4,
+        ease: "power1.out"
+      }, 5.2);
 
-  document.getElementById("restart").addEventListener("click", () => {
+      tl.to(assemblyGroup.rotation, {
+        y: 0,
+        duration: (tJ1 - tJ0),
+        ease: "power2.inOut"
+      }, tJ0);
+
+      tl.to(assemblyGroup.rotation, {
+        y: 4*groupYawTotal,
+        duration: (tK1 - tK0),
+        ease: "linear"
+      }, tK0);
+
+      // Play once; set to repeat(-1) if you want looping
+      tl.play(0);
+    }
+
     buildTimeline();
-  });
 
-  // -------------------------
-  // Render loop
-  // -------------------------
-  function animate() {
-    requestAnimationFrame(animate);
-    // controls.update();
-    renderer.render(scene, camera);
-  }
-  animate();
+    document.getElementById("restart").addEventListener("click", () => {
+      buildTimeline();
+    });
 
-  // -------------------------
-  // Resize
-  // -------------------------
-  window.addEventListener("resize", () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-</script>
+    // -------------------------
+    // Render loop
+    // -------------------------
+    function animate() {
+      requestAnimationFrame(animate);
+      // controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // -------------------------
+    // Resize
+    // -------------------------
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
 </body>
+
 </html>
