@@ -55,41 +55,41 @@
     // -------------------------
     // Constants (tweak here)
     // -------------------------
-    const ornamentRad = 1.6;          // ornament radius
-    const capRad = 0.45 * ornamentRad;     // cap radius
+    const ornamentRadius = 1.6;          // ornament radius
+    const capRadius = 0.45 * ornamentRadius;     // cap radius
 
-    const paperW = 7.0;
-    const paperH = 5.0;
+    const paperWidth = 7.0;
+    const paperHeight = 5.0;
 
     const paperThickness = 0.02;
 
-    const zLift = 0.5 * ornamentRad;
-    const zAssemble = 1*ornamentRad; // slightly above paper
-    const T = new THREE.Vector3(0, 0, zAssemble);
-    const TaRight = new THREE.Vector3(0, 1.4 * ornamentRad, zAssemble);
-    const Tacap = new THREE.Vector3(0, 2 * ornamentRad, zAssemble);
-    const TaLeft = new THREE.Vector3(TaRight.x, -TaRight.y + 0.3*ornamentRad, TaRight.z);
+    const liftHeight = 0.5 * ornamentRadius;
+    const assemblyZ = 1*ornamentRadius; // slightly above paper
+    const ornamentFinalPosition = new THREE.Vector3(0, 0, assemblyZ);
+    const rightAssemblyApproachPosition = new THREE.Vector3(0, 1.4 * ornamentRadius, assemblyZ);
+    const capAssemblyApproachPosition = new THREE.Vector3(0, 2 * ornamentRadius, assemblyZ);
+    const leftAssemblyApproachPosition = new THREE.Vector3(rightAssemblyApproachPosition.x, -rightAssemblyApproachPosition.y + 0.3*ornamentRadius, rightAssemblyApproachPosition.z);
     // const Tc = new THREE.Vector3(0, 0.6 * capRad, zAssemble);
-    const Tc = new THREE.Vector3(0, 0.96 * ornamentRad, zAssemble);
+    const capFinalPosition = new THREE.Vector3(0, 0.96 * ornamentRadius, assemblyZ);
 
     // title anchor is location of the "O"
-    const titleAnchor = new THREE.Vector3(0, 0, zAssemble);
+    const titleAnchorPosition = new THREE.Vector3(0, 0, assemblyZ);
 
 
-    const L0 = new THREE.Vector3(-1.1 * ornamentRad, 0, 0);
-    const R0 = new THREE.Vector3(+1.1 * ornamentRad, 0, 0);
+    const leftStartPosition = new THREE.Vector3(-1.1 * ornamentRadius, 0, 0);
+    const rightStartPosition = new THREE.Vector3(+1.1 * ornamentRadius, 0, 0);
     // const C0 = new THREE.Vector3(0, paperH / 2 - 0.8 * ornamentRad, 0);
-    const C0 = new THREE.Vector3(0, 1.3*ornamentRad, 0);
+    const capStartPosition = new THREE.Vector3(0, 1.3*ornamentRadius, 0);
 
     // Lifted positions (end of Phase C)
-    const L1 = L0.clone().add(new THREE.Vector3(-0.1 * ornamentRad, -0.05 * ornamentRad, zLift));
-    const R1 = R0.clone().add(new THREE.Vector3(+0.1 * ornamentRad, -0.05 * ornamentRad, zLift));
-    const C1 = C0.clone().add(new THREE.Vector3(0, +0.05 * ornamentRad, zLift));
+    const leftLiftedPosition = leftStartPosition.clone().add(new THREE.Vector3(-0.1 * ornamentRadius, -0.05 * ornamentRadius, liftHeight));
+    const rightLiftedPosition = rightStartPosition.clone().add(new THREE.Vector3(+0.1 * ornamentRadius, -0.05 * ornamentRadius, liftHeight));
+    const capLiftedPosition = capStartPosition.clone().add(new THREE.Vector3(0, +0.05 * ornamentRadius, liftHeight));
 
     // Quadratic Bezier control points
-    const Lc = new THREE.Vector3(-0.6 * ornamentRad, -1.8 * ornamentRad, zLift + 0.4 * ornamentRad);
-    const Rc = new THREE.Vector3(+0.6 * ornamentRad, +1.8 * ornamentRad, zLift + 0.4 * ornamentRad);
-    const Cc = new THREE.Vector3(0, +2.2 * ornamentRad, zLift + 0.6 * ornamentRad);
+    const leftCurveControl = new THREE.Vector3(-0.6 * ornamentRadius, -1.8 * ornamentRadius, liftHeight + 0.4 * ornamentRadius);
+    const rightCurveControl = new THREE.Vector3(+0.6 * ornamentRadius, +1.8 * ornamentRadius, liftHeight + 0.4 * ornamentRadius);
+    const capCurveControl = new THREE.Vector3(0, +2.2 * ornamentRadius, liftHeight + 0.6 * ornamentRadius);
 
     // Rotation totals
     const deg = (d) => d * Math.PI / 180;
@@ -118,7 +118,7 @@
 
     const letterCfg = {
       baselineY: 0,
-      finalZ: zAssemble + 0.02,
+      finalZ: assemblyZ + 0.02,
 
       // sequenceStart: 5.15,     // seconds on the GSAP timeline
       // flightDuration: 0.9,     // seconds per letter
@@ -289,16 +289,16 @@
     function makeOrnamentShape() {
       // Main circle at (0,0) radius R
       const shape = new THREE.Shape();
-      shape.absarc(0, 0, ornamentRad, 0, Math.PI * 2, false);
+      shape.absarc(0, 0, ornamentRadius, 0, Math.PI * 2, false);
 
       // Bump parameters
-      const bumpW = 0.6 * ornamentRad;
-      const bumpH = 0.8 * ornamentRad;
-      const bumpRad = 0.2 * ornamentRad;
-      const overlap = 0.4 * ornamentRad;
+      const bumpW = 0.6 * ornamentRadius;
+      const bumpH = 0.8 * ornamentRadius;
+      const bumpRad = 0.2 * ornamentRadius;
+      const overlap = 0.4 * ornamentRadius;
 
       const bx = -bumpW / 2;
-      const by = (ornamentRad - overlap); // bottom of bump overlaps the circle slightly
+      const by = (ornamentRadius - overlap); // bottom of bump overlaps the circle slightly
 
       const bump = roundedRectPath(bx, by, bumpW, bumpH, bumpRad);
 
@@ -335,9 +335,9 @@
     // -------------------------
     // Build paper
     // -------------------------
-    const paperGeo = new THREE.PlaneGeometry(paperW, paperH, 1, 1);
+    const paperGeo = new THREE.PlaneGeometry(paperWidth, paperHeight, 1, 1);
     const paper = new THREE.Mesh(paperGeo, paperMat);
-    paper.position.set(0, 0.3*ornamentRad, 0);
+    paper.position.set(0, 0.3*ornamentRadius, 0);
     scene.add(paper);
 
     // // Optional: dark backing plane for contrast
@@ -355,7 +355,7 @@
     function makeOrnamentPiece({ textureA, textureB }) {
 
       // Somehow this scales the image to fit the mesh. I 
-      const imageScaleMysteryNumber = (1 / (2 * ornamentRad));
+      const imageScaleMysteryNumber = (1 / (2 * ornamentRadius));
       // textureA.center.set(0.5, 0.5);
       textureA.offset.set(0.5, 0.5);
       textureA.repeat.set(imageScaleMysteryNumber, imageScaleMysteryNumber);
@@ -468,7 +468,7 @@
     function makeCapPiece(texture) {
 
       texture.offset.set(0.5, 0.5);
-      texture.repeat.set(1/(ornamentRad), 1/(ornamentRad));
+      texture.repeat.set(1/(ornamentRadius), 1/(ornamentRadius));
 
       const mat = new THREE.MeshStandardMaterial({
         map: texture,
@@ -477,7 +477,7 @@
       });
 
       const s = new THREE.Shape();
-      s.absarc(0, 0, capRad, 0, Math.PI * 2, false);
+      s.absarc(0, 0, capRadius, 0, Math.PI * 2, false);
       const mesh = new THREE.Mesh(extrudeShape(s, paperThickness), mat);
       return { mesh, shape: s };
     }
@@ -493,9 +493,9 @@
     const cap = makeCapPiece(capTexture);
 
     // Place pieces initially on the paper (flat, z=0)
-    ornamentL.group.position.copy(L0);
-    ornamentR.group.position.copy(R0);
-    cap.mesh.position.copy(C0);
+    ornamentL.group.position.copy(leftStartPosition);
+    ornamentR.group.position.copy(rightStartPosition);
+    cap.mesh.position.copy(capStartPosition);
 
     // Rotations initial
     ornamentL.group.rotation.set(0, 0, 0);
@@ -511,14 +511,14 @@
     // For ornament outline, draw both circle and bump as separate loops (still reads well in v1)
     const oL_circleLine = lineFromShape(ornamentL.circleShape);
     const oL_bumpLine = lineFromShape(ornamentL.bumpShape);
-    oL_circleLine.position.copy(L0); oL_bumpLine.position.copy(L0);
+    oL_circleLine.position.copy(leftStartPosition); oL_bumpLine.position.copy(leftStartPosition);
 
     const oR_circleLine = lineFromShape(ornamentR.circleShape);
     const oR_bumpLine = lineFromShape(ornamentR.bumpShape);
-    oR_circleLine.position.copy(R0); oR_bumpLine.position.copy(R0);
+    oR_circleLine.position.copy(rightStartPosition); oR_bumpLine.position.copy(rightStartPosition);
 
     const capLine = lineFromShape(cap.shape);
-    capLine.position.copy(C0);
+    capLine.position.copy(capStartPosition);
 
     outlineGroup.add(oL_circleLine, oL_bumpLine, oR_circleLine, oR_bumpLine, capLine);
     scene.add(outlineGroup);
@@ -529,9 +529,9 @@
     // -------------------------
     // Curves
     // -------------------------
-    const leftCurve = new THREE.QuadraticBezierCurve3(L1.clone(), Lc.clone(), TaLeft.clone());
-    const rightCurve = new THREE.QuadraticBezierCurve3(R1.clone(), Rc.clone(), TaRight.clone());
-    const capCurve = new THREE.QuadraticBezierCurve3(C1.clone(), Cc.clone(), Tacap.clone());
+    const leftCurve = new THREE.QuadraticBezierCurve3(leftLiftedPosition.clone(), leftCurveControl.clone(), leftAssemblyApproachPosition.clone());
+    const rightCurve = new THREE.QuadraticBezierCurve3(rightLiftedPosition.clone(), rightCurveControl.clone(), rightAssemblyApproachPosition.clone());
+    const capCurve = new THREE.QuadraticBezierCurve3(capLiftedPosition.clone(), capCurveControl.clone(), capAssemblyApproachPosition.clone());
 
     // -------------------------
     // Reparent helper (preserve world transform)
@@ -553,7 +553,7 @@
     // Assembly group (pivot at T)
     const assemblyGroup = new THREE.Group();
     const letterGroup = new THREE.Group();
-    assemblyGroup.position.copy(T);
+    assemblyGroup.position.copy(ornamentFinalPosition);
     scene.add(assemblyGroup);
     scene.add(letterGroup);
 
@@ -636,7 +636,7 @@
       letterGroup.clear();
 
       let cursorX = 0.62;
-      let prevGlyphWidth = 1.2 * ornamentRad;
+      let prevGlyphWidth = 1.2 * ornamentRadius;
 
       for (const ch of titleLetters) {
         if (ch === " ") {
@@ -680,9 +680,9 @@
       if (tl) tl.kill();
 
       // Reset state
-      ornamentL.group.position.copy(L0);
-      ornamentR.group.position.copy(R0);
-      cap.mesh.position.copy(C0);
+      ornamentL.group.position.copy(leftStartPosition);
+      ornamentR.group.position.copy(rightStartPosition);
+      cap.mesh.position.copy(capStartPosition);
 
       ornamentL.group.rotation.set(0, 0, 0);
       ornamentR.group.rotation.set(0, 0, 0);
@@ -710,9 +710,9 @@
 
         tl.call(() => {
           sprite.position.set(
-            -titleAnchor.x,
-            -titleAnchor.y,
-            -titleAnchor.z
+            -titleAnchorPosition.x,
+            -titleAnchorPosition.y,
+            -titleAnchorPosition.z
           );
           sprite.scale.set(letterCfg.startScale, letterCfg.startScale, 1);
           mat.opacity = 0;
@@ -769,9 +769,9 @@
       }, tB0);
 
       // C) Pieces lift out (1.20–1.80)
-      tl.to(ornamentL.group.position, { x: L1.x, y: L1.y, z: L1.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
-      tl.to(ornamentR.group.position, { x: R1.x, y: R1.y, z: R1.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
-      tl.to(cap.mesh.position, { x: C1.x, y: C1.y, z: C1.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
+      tl.to(ornamentL.group.position, { x: leftLiftedPosition.x, y: leftLiftedPosition.y, z: leftLiftedPosition.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
+      tl.to(ornamentR.group.position, { x: rightLiftedPosition.x, y: rightLiftedPosition.y, z: rightLiftedPosition.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
+      tl.to(cap.mesh.position, { x: capLiftedPosition.x, y: capLiftedPosition.y, z: capLiftedPosition.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
 
       // Optional: dim outlines slightly after lift (helps "cut out" read)
       tl.to(outlineMats, {
@@ -817,7 +817,7 @@
       }, tD0);
 
       tl.to(cap.mesh.position, {
-        z: -1*ornamentRad,
+        z: -1*ornamentRadius,
         duration: (tD1 - tD0),
         ease: "power2.inOut"
       }, tD0);
@@ -836,13 +836,13 @@
 
       // E) Right drops Ta → T (3.20–3.60)
       tl.to(ornamentR.group.position, {
-        x: T.x, y: T.y, z: T.z + 0.03, // tiny z offset to prevent fighting
+        x: ornamentFinalPosition.x, y: ornamentFinalPosition.y, z: ornamentFinalPosition.z + 0.03, // tiny z offset to prevent fighting
         duration: (tE1 - tE0),
         ease: "power2.inOut"
       }, tE0);
 
       tl.to(ornamentL.group.position, {
-        x: T.x, y: T.y, z: T.z, // tiny z offset to prevent fighting
+        x: ornamentFinalPosition.x, y: ornamentFinalPosition.y, z: ornamentFinalPosition.z, // tiny z offset to prevent fighting
         duration: (tE1 - tE0),
         ease: "power2.inOut"
       }, tE0);
@@ -868,22 +868,22 @@
 
       // H) Cap moves Ta → Tc (4.60–5.00), stops short
       tl.to(cap.mesh.position, {
-        x: Tc.x, y: Tc.y, z: Tc.z + 0.06, // tiny z offset
+        x: capFinalPosition.x, y: capFinalPosition.y, z: capFinalPosition.z + 0.06, // tiny z offset
         duration: (tH1 - tH0),
         ease: "power2.out"
       }, tH0);
 
       // Ensure left is precisely at T by now (and offset slightly)
       tl.to(ornamentL.group.position, {
-        x: T.x, y: T.y, z: T.z + 0.00,
+        x: ornamentFinalPosition.x, y: ornamentFinalPosition.y, z: ornamentFinalPosition.z + 0.00,
         duration: 0.001
       }, tI0 - 0.001);
 
       // I) Reparent into assemblyGroup at 5.00, then rotate group 5.00–6.00
       tl.call(() => {
         // Set pivot at T (already), then reparent all while preserving world transforms
-        assemblyGroup.position.copy(titleAnchor);
-        letterGroup.position.copy(titleAnchor);
+        assemblyGroup.position.copy(titleAnchorPosition);
+        letterGroup.position.copy(titleAnchorPosition);
         assemblyGroup.rotation.set(0, 0, 0);
 
         reparentPreserveWorld(ornamentL.group, assemblyGroup);
@@ -891,14 +891,14 @@
         reparentPreserveWorld(cap.mesh, assemblyGroup);
       }, [], tI0);
 
-      tl.to(titleAnchor, {
+      tl.to(titleAnchorPosition, {
         x: -4.0,
         duration: (tI1 - tI0),
         ease: "power2.inOut",
         onUpdate: () => {
-          assemblyGroup.position.copy(titleAnchor);
-          letterGroup.position.copy(titleAnchor);
-          outlineGroup.position.copy(titleAnchor);
+          assemblyGroup.position.copy(titleAnchorPosition);
+          letterGroup.position.copy(titleAnchorPosition);
+          outlineGroup.position.copy(titleAnchorPosition);
         }
       }, tI0);
 
