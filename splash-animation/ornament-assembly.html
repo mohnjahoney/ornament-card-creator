@@ -64,11 +64,11 @@
     const paperThickness = 0.02;
 
     const liftHeight = 0.5 * ornamentRadius;
-    const assemblyZ = 1*ornamentRadius; // slightly above paper
+    const assemblyZ = 1 * ornamentRadius; // slightly above paper
     const ornamentFinalPosition = new THREE.Vector3(0, 0, assemblyZ);
     const rightAssemblyApproachPosition = new THREE.Vector3(0, 1.4 * ornamentRadius, assemblyZ);
     const capAssemblyApproachPosition = new THREE.Vector3(0, 2 * ornamentRadius, assemblyZ);
-    const leftAssemblyApproachPosition = new THREE.Vector3(rightAssemblyApproachPosition.x, -rightAssemblyApproachPosition.y + 0.3*ornamentRadius, rightAssemblyApproachPosition.z);
+    const leftAssemblyApproachPosition = new THREE.Vector3(rightAssemblyApproachPosition.x, -rightAssemblyApproachPosition.y + 0.3 * ornamentRadius, rightAssemblyApproachPosition.z);
     // const Tc = new THREE.Vector3(0, 0.6 * capRad, zAssemble);
     const capFinalPosition = new THREE.Vector3(0, 0.96 * ornamentRadius, assemblyZ);
 
@@ -79,7 +79,7 @@
     const leftStartPosition = new THREE.Vector3(-1.1 * ornamentRadius, 0, 0);
     const rightStartPosition = new THREE.Vector3(+1.1 * ornamentRadius, 0, 0);
     // const C0 = new THREE.Vector3(0, paperH / 2 - 0.8 * ornamentRad, 0);
-    const capStartPosition = new THREE.Vector3(0, 1.3*ornamentRadius, 0);
+    const capStartPosition = new THREE.Vector3(0, 1.3 * ornamentRadius, 0);
 
     // Lifted positions (end of Phase C)
     const leftLiftedPosition = leftStartPosition.clone().add(new THREE.Vector3(-0.1 * ornamentRadius, -0.05 * ornamentRadius, liftHeight));
@@ -150,7 +150,7 @@
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
 
-  
+
     // renderer.setSize(window.innerWidth, window.innerHeight);
     // renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     // document.body.appendChild(renderer.domElement);
@@ -173,7 +173,7 @@
     // console.log("RoomEnvironment", RoomEnvironment);
     // console.log("pmrem", pmrem);
     // const envMap = pmrem.fromScene(environment).texture;
-    
+
 
     // scene.environment = envMap;
 
@@ -186,7 +186,7 @@
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(0, 0.6, 10);
 
-    
+
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     document.body.appendChild(renderer.domElement);
@@ -337,7 +337,7 @@
     // -------------------------
     const paperGeo = new THREE.PlaneGeometry(paperWidth, paperHeight, 1, 1);
     const paper = new THREE.Mesh(paperGeo, paperMat);
-    paper.position.set(0, 0.3*ornamentRadius, 0);
+    paper.position.set(0, 0.3 * ornamentRadius, 0);
     scene.add(paper);
 
     // // Optional: dark backing plane for contrast
@@ -347,6 +347,63 @@
     // );
     // backing.position.set(0, 0, -0.08);
     // scene.add(backing);
+
+    function makeTexturedFaceMaterial(texture) {
+      return new THREE.MeshBasicMaterial({
+        map: texture,
+      });
+    }
+
+    function makeInvisibleCapMaterial() {
+      return new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0
+      });
+    }
+
+    function makeOrnamentEdgeMaterial() {
+      return new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+      });
+    }
+
+    function makeBumpMaterial() {
+      return new THREE.MeshStandardMaterial({
+        color: 0xd9d9d9,
+        roughness: 0.85,
+        metalness: 0.2,
+      });
+    }
+
+    function makeFaceGroups({ circleGeo, bumpGeo, matA, matB, matBump, paperThickness }) {
+      const frontCircleMesh = new THREE.Mesh(circleGeo, matA);
+      const backCircleMesh = new THREE.Mesh(circleGeo, matB);
+      const frontBumpMesh = new THREE.Mesh(bumpGeo, matBump);
+      const backBumpMesh = new THREE.Mesh(bumpGeo, matBump);
+
+      frontBumpMesh.position.z -= 0.01 * paperThickness;
+      backBumpMesh.position.z -= 0.01 * paperThickness;
+
+      const frontGroup = new THREE.Group();
+      const backGroup = new THREE.Group();
+
+      frontGroup.add(frontCircleMesh);
+      frontGroup.add(frontBumpMesh);
+
+      backGroup.add(backCircleMesh);
+      backGroup.add(backBumpMesh);
+
+      frontGroup.position.z += paperThickness / 2;
+      backGroup.rotation.y = Math.PI;
+      backGroup.position.z += -paperThickness / 2;
+
+      return { frontGroup, backGroup };
+    }
+
+    function makeEdgeMesh(shape, paperThickness, matCapsInvisible, edgeMaterial) {
+      const sideGeo = extrudeShape(shape, paperThickness);
+      return new THREE.Mesh(sideGeo, [matCapsInvisible, edgeMaterial]);
+    }
 
     // -------------------------
     // Build cutouts + outlines
@@ -364,103 +421,35 @@
       textureB.offset.set(0.5, 0.5);
       textureB.repeat.set(imageScaleMysteryNumber, imageScaleMysteryNumber);
 
-      const matA = new THREE.MeshBasicMaterial({
-        map: textureA,
-      });
-
-      const matB = new THREE.MeshBasicMaterial({
-        map: textureB,
-      });
-
-      const matCapsInvisible = new THREE.MeshBasicMaterial({
-        transparent: true,
-        opacity: 0
-      });
-
-      const matSide = new THREE.MeshBasicMaterial({
-        // color: 0xff4444,
-        color: 0xffffff,
-        // roughness: 0.85,
-        // metalness: 0.0,
-      });
-
-      const matBump = new THREE.MeshStandardMaterial({
-        color: 0xd9d9d9,
-        roughness: 0.85,
-        metalness: 0.2,
-      });
-
-      // // Silver metal
-      // const matBump = new THREE.MeshStandardMaterial({
-      //   color: 0xd9d9d9,
-      //   metalness: 0.8,
-      //   roughness: 0.25
-      // });
-
-      // // Gold metal
-      // const matBump = new THREE.MeshStandardMaterial({
-      //   color: 0xd4af37,
-      //   metalness: 1.0,
-      //   roughness: 0.3
-      // });
+      const matA = makeTexturedFaceMaterial(textureA);
+      const matB = makeTexturedFaceMaterial(textureB);
+      const matCapsInvisible = makeInvisibleCapMaterial();
+      const matSide = makeOrnamentEdgeMaterial();
+      const matBump = makeBumpMaterial();
 
       const { circleShape, bumpShape } = makeOrnamentShape();
 
       const circleGeo = new THREE.ShapeGeometry(circleShape, 64);
       const bumpGeo = new THREE.ShapeGeometry(bumpShape, 64);
 
-      const frontCircleMesh = new THREE.Mesh(circleGeo, matA);
-      const backCircleMesh = new THREE.Mesh(circleGeo, matB);
-      const frontBumpMesh = new THREE.Mesh(bumpGeo, matBump);
-      const backBumpMesh = new THREE.Mesh(bumpGeo, matBump);
+      const { frontGroup, backGroup } = makeFaceGroups({
+        circleGeo,
+        bumpGeo,
+        matA,
+        matB,
+        matBump,
+        paperThickness
+      });
 
-      frontBumpMesh.position.z -= 0.01 * paperThickness
-      backBumpMesh.position.z -= 0.01 * paperThickness
-
-      const circleSideGeo = extrudeShape(circleShape, paperThickness);
-
-      const circleSideMesh = new THREE.Mesh(
-        circleSideGeo,
-        [matCapsInvisible, matSide]
-      );
-
-      const bumpSideGeo = extrudeShape(bumpShape, paperThickness);
-
-      const bumpSideMesh = new THREE.Mesh(
-        bumpSideGeo,
-        [matCapsInvisible, matBump]
-      );
-      // const circleSideGeo = extrudeShape(shape = circleShape, depth = paperThickness);
-      // const matCapsInvisible = new THREE.MeshBasicMaterial({
-      //   transparent: true,
-      //   opacity: 0
-      // });
-
-      // const circleSideMesh = new THREE.Mesh(
-      //   circleSideGeo,
-      //   [matCapsInvisible, matSide]
-      // );
-
-      const frontGroup = new THREE.Group();
-      const backGroup = new THREE.Group();
-
-      frontGroup.add(frontCircleMesh);
-      frontGroup.add(frontBumpMesh);
-
-      backGroup.add(backCircleMesh);
-      backGroup.add(backBumpMesh);
-
-      frontGroup.position.z += paperThickness / 2;
-
-      backGroup.rotation.y = Math.PI; // or rotate around x depending on orientation
-      backGroup.position.z += -paperThickness / 2;
+      const circleSideMesh = makeEdgeMesh(circleShape, paperThickness, matCapsInvisible, matSide);
+      const bumpSideMesh = makeEdgeMesh(bumpShape, paperThickness, matCapsInvisible, matBump);
 
       const g = new THREE.Group();
       g.add(frontGroup);
       g.add(backGroup);
       g.add(circleSideMesh);
       g.add(bumpSideMesh);
-      // g.add(circleSideMesh);
+
       // Pivot at main circle center is already (0,0,0)
       return { group: g, circleShape: circleShape, bumpShape: bumpShape };
     }
@@ -468,7 +457,7 @@
     function makeCapPiece(texture) {
 
       texture.offset.set(0.5, 0.5);
-      texture.repeat.set(1/(ornamentRadius), 1/(ornamentRadius));
+      texture.repeat.set(1 / (ornamentRadius), 1 / (ornamentRadius));
 
       const mat = new THREE.MeshStandardMaterial({
         map: texture,
@@ -483,13 +472,17 @@
     }
 
     const ornamentL = makeOrnamentPiece(
-        { textureA: ornamentTextureALeft,
-        textureB: ornamentTextureBRight}
-      );
-      const ornamentR = makeOrnamentPiece(
-        { textureA: ornamentTextureARight,
-        textureB: ornamentTextureBLeft}
-      );
+      {
+        textureA: ornamentTextureALeft,
+        textureB: ornamentTextureBRight
+      }
+    );
+    const ornamentR = makeOrnamentPiece(
+      {
+        textureA: ornamentTextureARight,
+        textureB: ornamentTextureBLeft
+      }
+    );
     const cap = makeCapPiece(capTexture);
 
     // Place pieces initially on the paper (flat, z=0)
@@ -632,11 +625,10 @@
       return sprite;
     }
 
-    function createTitleLetters() {
-      letterGroup.clear();
-
+    function computeLetterLayout() {
       let cursorX = 0.62;
       let prevGlyphWidth = 1.2 * ornamentRadius;
+      const layout = [];
 
       for (const ch of titleLetters) {
         if (ch === " ") {
@@ -648,38 +640,347 @@
         }
 
         const glyphWidth = measureLetterWidth(ch) * letterCfg.widthScale;
-        const sprite = makeLetterSprite(ch);
-        sprite.userData.glyphWidth = glyphWidth;
 
         cursorX += prevGlyphWidth / 2;
         cursorX += glyphWidth / 2;
+
+        layout.push({
+          char: ch,
+          glyphWidth,
+          targetX: cursorX,
+          targetY: letterCfg.baselineY,
+          targetZ: letterCfg.finalZ,
+          arcHeight: letterCfg.arcHeight,
+        });
+
+        cursorX += letterCfg.tracking;
+        prevGlyphWidth = glyphWidth;
+      }
+
+      return layout;
+    }
+
+    // function createTitleLetters() {
+    //   letterGroup.clear();
+
+    //   let cursorX = 0.62;
+    //   let prevGlyphWidth = 1.2 * ornamentRadius;
+
+    //   for (const ch of titleLetters) {
+    //     if (ch === " ") {
+    //       const spaceWidth = measureLetterWidth(" ") * letterCfg.widthScale + letterCfg.wordGapExtra;
+    //       cursorX += prevGlyphWidth / 2;
+    //       cursorX += spaceWidth;
+    //       prevGlyphWidth = spaceWidth;
+    //       continue;
+    //     }
+
+    //     const glyphWidth = measureLetterWidth(ch) * letterCfg.widthScale;
+    //     const sprite = makeLetterSprite(ch);
+    //     sprite.userData.glyphWidth = glyphWidth;
+
+    //     cursorX += prevGlyphWidth / 2;
+    //     cursorX += glyphWidth / 2;
+
+    //     sprite.position.set(
+    //       letterCfg.spawnOffsetX,
+    //       letterCfg.spawnOffsetY,
+    //       letterCfg.spawnOffsetZ
+    //     );
+    //     sprite.userData.targetX = cursorX;
+    //     sprite.userData.targetY = letterCfg.baselineY;
+    //     sprite.userData.targetZ = letterCfg.finalZ;
+    //     sprite.userData.arcHeight = letterCfg.arcHeight;
+
+    //     letterGroup.add(sprite);
+
+    //     cursorX += letterCfg.tracking;
+    //     prevGlyphWidth = glyphWidth;
+    //   }
+    // }
+    function createTitleLetters() {
+      letterGroup.clear();
+
+      const layout = computeLetterLayout();
+
+      for (const letterSpec of layout) {
+        const sprite = makeLetterSprite(letterSpec.char);
+        sprite.userData.glyphWidth = letterSpec.glyphWidth;
 
         sprite.position.set(
           letterCfg.spawnOffsetX,
           letterCfg.spawnOffsetY,
           letterCfg.spawnOffsetZ
         );
-        sprite.userData.targetX = cursorX;
-        sprite.userData.targetY = letterCfg.baselineY;
-        sprite.userData.targetZ = letterCfg.finalZ;
-        sprite.userData.arcHeight = letterCfg.arcHeight;
+        sprite.userData.targetX = letterSpec.targetX;
+        sprite.userData.targetY = letterSpec.targetY;
+        sprite.userData.targetZ = letterSpec.targetZ;
+        sprite.userData.arcHeight = letterSpec.arcHeight;
 
         letterGroup.add(sprite);
-
-        cursorX += letterCfg.tracking;
-        prevGlyphWidth = glyphWidth;
       }
     }
-
     // -------------------------
     // GSAP Timeline (total 6.0s)
     // -------------------------
     let tl;
 
-    function buildTimeline() {
-      if (tl) tl.kill();
+    // function buildTimeline() {
+    //   if (tl) tl.kill();
 
-      // Reset state
+    //   // Reset state
+    //   ornamentL.group.position.copy(leftStartPosition);
+    //   ornamentR.group.position.copy(rightStartPosition);
+    //   cap.mesh.position.copy(capStartPosition);
+
+    //   ornamentL.group.rotation.set(0, 0, 0);
+    //   ornamentR.group.rotation.set(0, 0, 0);
+    //   cap.mesh.rotation.set(0, 0, 0);
+
+    //   assemblyGroup.rotation.set(0, 0, 0);
+    //   createTitleLetters();
+
+    //   // Ensure pieces are direct children of scene pre-Phase I
+    //   if (ornamentL.group.parent !== scene) reparentPreserveWorld(ornamentL.group, scene);
+    //   if (ornamentR.group.parent !== scene) reparentPreserveWorld(ornamentR.group, scene);
+    //   if (cap.mesh.parent !== scene) reparentPreserveWorld(cap.mesh, scene);
+
+    //   // Outline opacity reset
+    //   outlineMats.forEach(m => m.opacity = 0);
+
+    //   tl = gsap.timeline({
+    //     defaults: { overwrite: false },
+    //     duration: 6.0
+    //   });
+
+    //   letterGroup.children.forEach((sprite, index) => {
+    //     const launchTime = letterCfg.sequenceStart + index * letterCfg.launchDelay;
+    //     const mat = sprite.material;
+
+    //     tl.call(() => {
+    //       sprite.position.set(
+    //         -titleAnchorPosition.x,
+    //         -titleAnchorPosition.y,
+    //         -titleAnchorPosition.z
+    //       );
+    //       sprite.scale.set(letterCfg.startScale, letterCfg.startScale, 1);
+    //       mat.opacity = 0;
+    //     }, [], launchTime);
+
+    //     tl.to(sprite.position, {
+    //       // x: sprite.userData.targetX,
+    //       // x: () => sprite.userData.currentTargetX,
+    //       x: sprite.userData.targetX,
+    //       z: sprite.userData.targetZ,
+    //       duration: letterCfg.flightDuration,
+    //       ease: "power2.inOut"
+    //     }, launchTime);
+
+    //     tl.to(sprite.scale, {
+    //       x: letterCfg.finalScale * 1.12,
+    //       y: letterCfg.finalScale * 1.12,
+    //       duration: letterCfg.flightDuration * 0.65,
+    //       ease: "back.out(1.7)"
+    //     }, launchTime);
+
+    //     tl.to(sprite.scale, {
+    //       x: letterCfg.finalScale,
+    //       y: letterCfg.finalScale,
+    //       duration: letterCfg.flightDuration * 0.35,
+    //       ease: "power2.out"
+    //     }, launchTime + letterCfg.flightDuration * 0.65);
+
+    //     tl.to(mat, {
+    //       opacity: 1,
+    //       duration: Math.min(0.18, letterCfg.flightDuration * 0.25),
+    //       ease: "power1.out"
+    //     }, launchTime);
+
+    //     const arcState = { t: 0 };
+    //     tl.to(arcState, {
+    //       t: 1,
+    //       duration: letterCfg.flightDuration,
+    //       ease: "none",
+    //       onUpdate: () => {
+    //         sprite.position.y = letterCfg.baselineY + Math.sin(arcState.t * Math.PI) * sprite.userData.arcHeight;
+    //         // sprite.position.y = letterCfg.baselineY + Math.sin(arcState.t * Math.PI) * sprite.userData.arcHeight + 0.2*index;
+    //       }
+    //     }, launchTime);
+    //   });
+
+    //   // A) Blank paper (0.00–0.60): do nothing
+
+    //   // B) Outlines appear (0.60–1.20)
+    //   tl.to(outlineMats, {
+    //     opacity: 1,
+    //     duration: (tB1 - tB0),
+    //     ease: "power1.inOut"
+    //   }, tB0);
+
+    //   // C) Pieces lift out (1.20–1.80)
+    //   tl.to(ornamentL.group.position, { x: leftLiftedPosition.x, y: leftLiftedPosition.y, z: leftLiftedPosition.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
+    //   tl.to(ornamentR.group.position, { x: rightLiftedPosition.x, y: rightLiftedPosition.y, z: rightLiftedPosition.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
+    //   tl.to(cap.mesh.position, { x: capLiftedPosition.x, y: capLiftedPosition.y, z: capLiftedPosition.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
+
+    //   // Optional: dim outlines slightly after lift (helps "cut out" read)
+    //   tl.to(outlineMats, {
+    //     opacity: 0.35,
+    //     duration: 0.25,
+    //     ease: "power1.out"
+    //   }, tC1 - 0.10);
+
+    //   // D) Travel on curves + spins (1.80–3.20)
+    //   const leftU = { u: 0 };
+    //   const rightU = { u: 0 };
+
+    //   tl.to(leftU, {
+    //     u: 1,
+    //     duration: (tD1 - tD0),
+    //     ease: "power2.inOut",
+    //     onUpdate: () => {
+    //       const p = leftCurve.getPoint(leftU.u);
+    //       ornamentL.group.position.copy(p);
+    //     }
+    //   }, tD0);
+
+    //   tl.to(rightU, {
+    //     u: 1,
+    //     duration: (tD1 - tD0),
+    //     ease: "power2.inOut",
+    //     onUpdate: () => {
+    //       const p = rightCurve.getPoint(rightU.u);
+    //       ornamentR.group.position.copy(p);
+    //     }
+    //   }, tD0);
+
+    //   tl.to(ornamentL.group.rotation, {
+    //     y: leftYawTotal,
+    //     duration: (tD1 - tD0),
+    //     ease: "power2.inOut"
+    //   }, tD0);
+
+    //   tl.to(ornamentR.group.rotation, {
+    //     y: rightYawTotal,
+    //     duration: (tD1 - tD0),
+    //     ease: "power2.inOut"
+    //   }, tD0);
+
+    //   tl.to(cap.mesh.position, {
+    //     z: -1 * ornamentRadius,
+    //     duration: (tD1 - tD0),
+    //     ease: "power2.inOut"
+    //   }, tD0);
+
+    //   tl.to(paper.position, {
+    //     z: -10,
+    //     duration: (tD1 - tD0),
+    //     ease: "power2.inOut"
+    //   }, tD0);
+
+    //   tl.to(paperMat, {
+    //     opacity: 0,
+    //     duration: (tD1 - tD0),
+    //     ease: "power1.inOut"
+    //   }, tD0);
+
+    //   // E) Right drops Ta → T (3.20–3.60)
+    //   tl.to(ornamentR.group.position, {
+    //     x: ornamentFinalPosition.x, y: ornamentFinalPosition.y, z: ornamentFinalPosition.z + 0.03, // tiny z offset to prevent fighting
+    //     duration: (tE1 - tE0),
+    //     ease: "power2.inOut"
+    //   }, tE0);
+
+    //   tl.to(ornamentL.group.position, {
+    //     x: ornamentFinalPosition.x, y: ornamentFinalPosition.y, z: ornamentFinalPosition.z, // tiny z offset to prevent fighting
+    //     duration: (tE1 - tE0),
+    //     ease: "power2.inOut"
+    //   }, tE0);
+
+    //   // F) Cap travels C → Ta (3.20–4.00)
+    //   const capU = { u: 0 };
+    //   tl.to(capU, {
+    //     u: 1,
+    //     duration: (tF1 - tF0),
+    //     ease: "power2.inOut",
+    //     onUpdate: () => {
+    //       const p = capCurve.getPoint(capU.u);
+    //       cap.mesh.position.copy(p);
+    //     }
+    //   }, tF0);
+
+    //   // G) Cap rotates +450° about local X (4.00–4.60)
+    //   tl.to(cap.mesh.rotation, {
+    //     x: capPitchTotal,
+    //     duration: (tG1 - tG0),
+    //     ease: "power2.inOut"
+    //   }, tG0);
+
+    //   // H) Cap moves Ta → Tc (4.60–5.00), stops short
+    //   tl.to(cap.mesh.position, {
+    //     x: capFinalPosition.x, y: capFinalPosition.y, z: capFinalPosition.z + 0.06, // tiny z offset
+    //     duration: (tH1 - tH0),
+    //     ease: "power2.out"
+    //   }, tH0);
+
+    //   // Ensure left is precisely at T by now (and offset slightly)
+    //   tl.to(ornamentL.group.position, {
+    //     x: ornamentFinalPosition.x, y: ornamentFinalPosition.y, z: ornamentFinalPosition.z + 0.00,
+    //     duration: 0.001
+    //   }, tI0 - 0.001);
+
+    //   // I) Reparent into assemblyGroup at 5.00, then rotate group 5.00–6.00
+    //   tl.call(() => {
+    //     // Set pivot at T (already), then reparent all while preserving world transforms
+    //     assemblyGroup.position.copy(titleAnchorPosition);
+    //     letterGroup.position.copy(titleAnchorPosition);
+    //     assemblyGroup.rotation.set(0, 0, 0);
+
+    //     reparentPreserveWorld(ornamentL.group, assemblyGroup);
+    //     reparentPreserveWorld(ornamentR.group, assemblyGroup);
+    //     reparentPreserveWorld(cap.mesh, assemblyGroup);
+    //   }, [], tI0);
+
+    //   tl.to(titleAnchorPosition, {
+    //     x: -4.0,
+    //     duration: (tI1 - tI0),
+    //     ease: "power2.inOut",
+    //     onUpdate: () => {
+    //       assemblyGroup.position.copy(titleAnchorPosition);
+    //       letterGroup.position.copy(titleAnchorPosition);
+    //       outlineGroup.position.copy(titleAnchorPosition);
+    //     }
+    //   }, tI0);
+
+    //   tl.to(assemblyGroup.rotation, {
+    //     y: groupYawTotal,
+    //     duration: (tI1 - tI0),
+    //     ease: "power2.inOut"
+    //   }, tI0);
+
+    //   // Optional: fade outlines out at end
+    //   tl.to(outlineMats, {
+    //     opacity: 0,
+    //     duration: 0.4,
+    //     ease: "power1.out"
+    //   }, 5.2);
+
+    //   tl.to(assemblyGroup.rotation, {
+    //     y: 0,
+    //     duration: (tJ1 - tJ0),
+    //     ease: "power2.inOut"
+    //   }, tJ0);
+
+    //   tl.to(assemblyGroup.rotation, {
+    //     y: 4 * groupYawTotal,
+    //     duration: (tK1 - tK0),
+    //     ease: "linear"
+    //   }, tK0);
+
+    //   // Play once; set to repeat(-1) if you want looping
+    //   tl.play(0);
+    // }
+
+    function resetSceneState() {
       ornamentL.group.position.copy(leftStartPosition);
       ornamentR.group.position.copy(rightStartPosition);
       cap.mesh.position.copy(capStartPosition);
@@ -689,21 +990,29 @@
       cap.mesh.rotation.set(0, 0, 0);
 
       assemblyGroup.rotation.set(0, 0, 0);
-      createTitleLetters();
 
-      // Ensure pieces are direct children of scene pre-Phase I
+      paper.position.set(0, 0.3 * ornamentRadius, 0);
+      paperMat.opacity = 1;
+
+      titleAnchorPosition.set(0, 0, assemblyZ);
+      assemblyGroup.position.copy(ornamentFinalPosition);
+      letterGroup.position.copy(titleAnchorPosition);
+      outlineGroup.position.set(0, 0, 0);
+    }
+
+    function ensureDirectSceneParenting() {
       if (ornamentL.group.parent !== scene) reparentPreserveWorld(ornamentL.group, scene);
       if (ornamentR.group.parent !== scene) reparentPreserveWorld(ornamentR.group, scene);
       if (cap.mesh.parent !== scene) reparentPreserveWorld(cap.mesh, scene);
+    }
 
-      // Outline opacity reset
-      outlineMats.forEach(m => m.opacity = 0);
-
-      tl = gsap.timeline({
-        defaults: { overwrite: false },
-        duration: 6.0
+    function resetOutlineOpacity() {
+      outlineMats.forEach((m) => {
+        m.opacity = 0;
       });
+    }
 
+    function addLetterTweens(tl) {
       letterGroup.children.forEach((sprite, index) => {
         const launchTime = letterCfg.sequenceStart + index * letterCfg.launchDelay;
         const mat = sprite.material;
@@ -719,8 +1028,6 @@
         }, [], launchTime);
 
         tl.to(sprite.position, {
-          // x: sprite.userData.targetX,
-          // x: () => sprite.userData.currentTargetX,
           x: sprite.userData.targetX,
           z: sprite.userData.targetZ,
           duration: letterCfg.flightDuration,
@@ -753,34 +1060,61 @@
           duration: letterCfg.flightDuration,
           ease: "none",
           onUpdate: () => {
-            sprite.position.y = letterCfg.baselineY + Math.sin(arcState.t * Math.PI) * sprite.userData.arcHeight;
-            // sprite.position.y = letterCfg.baselineY + Math.sin(arcState.t * Math.PI) * sprite.userData.arcHeight + 0.2*index;
+            sprite.position.y =
+              letterCfg.baselineY +
+              Math.sin(arcState.t * Math.PI) * sprite.userData.arcHeight;
           }
         }, launchTime);
       });
+    }
 
-      // A) Blank paper (0.00–0.60): do nothing
-
-      // B) Outlines appear (0.60–1.20)
+    function addOutlineTweens(tl) {
       tl.to(outlineMats, {
         opacity: 1,
         duration: (tB1 - tB0),
         ease: "power1.inOut"
       }, tB0);
 
-      // C) Pieces lift out (1.20–1.80)
-      tl.to(ornamentL.group.position, { x: leftLiftedPosition.x, y: leftLiftedPosition.y, z: leftLiftedPosition.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
-      tl.to(ornamentR.group.position, { x: rightLiftedPosition.x, y: rightLiftedPosition.y, z: rightLiftedPosition.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
-      tl.to(cap.mesh.position, { x: capLiftedPosition.x, y: capLiftedPosition.y, z: capLiftedPosition.z, duration: (tC1 - tC0), ease: "power2.out" }, tC0);
-
-      // Optional: dim outlines slightly after lift (helps "cut out" read)
       tl.to(outlineMats, {
         opacity: 0.35,
         duration: 0.25,
         ease: "power1.out"
       }, tC1 - 0.10);
 
-      // D) Travel on curves + spins (1.80–3.20)
+      tl.to(outlineMats, {
+        opacity: 0,
+        duration: 0.4,
+        ease: "power1.out"
+      }, 5.2);
+    }
+
+    function addLiftTweens(tl) {
+      tl.to(ornamentL.group.position, {
+        x: leftLiftedPosition.x,
+        y: leftLiftedPosition.y,
+        z: leftLiftedPosition.z,
+        duration: (tC1 - tC0),
+        ease: "power2.out"
+      }, tC0);
+
+      tl.to(ornamentR.group.position, {
+        x: rightLiftedPosition.x,
+        y: rightLiftedPosition.y,
+        z: rightLiftedPosition.z,
+        duration: (tC1 - tC0),
+        ease: "power2.out"
+      }, tC0);
+
+      tl.to(cap.mesh.position, {
+        x: capLiftedPosition.x,
+        y: capLiftedPosition.y,
+        z: capLiftedPosition.z,
+        duration: (tC1 - tC0),
+        ease: "power2.out"
+      }, tC0);
+    }
+
+    function addTravelTweens(tl) {
       const leftU = { u: 0 };
       const rightU = { u: 0 };
 
@@ -817,7 +1151,7 @@
       }, tD0);
 
       tl.to(cap.mesh.position, {
-        z: -1*ornamentRadius,
+        z: -1 * ornamentRadius,
         duration: (tD1 - tD0),
         ease: "power2.inOut"
       }, tD0);
@@ -833,21 +1167,25 @@
         duration: (tD1 - tD0),
         ease: "power1.inOut"
       }, tD0);
+    }
 
-      // E) Right drops Ta → T (3.20–3.60)
+    function addDropAndCapTweens(tl) {
       tl.to(ornamentR.group.position, {
-        x: ornamentFinalPosition.x, y: ornamentFinalPosition.y, z: ornamentFinalPosition.z + 0.03, // tiny z offset to prevent fighting
+        x: ornamentFinalPosition.x,
+        y: ornamentFinalPosition.y,
+        z: ornamentFinalPosition.z + 0.03,
         duration: (tE1 - tE0),
         ease: "power2.inOut"
       }, tE0);
 
       tl.to(ornamentL.group.position, {
-        x: ornamentFinalPosition.x, y: ornamentFinalPosition.y, z: ornamentFinalPosition.z, // tiny z offset to prevent fighting
+        x: ornamentFinalPosition.x,
+        y: ornamentFinalPosition.y,
+        z: ornamentFinalPosition.z + 0.00,
         duration: (tE1 - tE0),
         ease: "power2.inOut"
       }, tE0);
 
-      // F) Cap travels C → Ta (3.20–4.00)
       const capU = { u: 0 };
       tl.to(capU, {
         u: 1,
@@ -859,29 +1197,30 @@
         }
       }, tF0);
 
-      // G) Cap rotates +450° about local X (4.00–4.60)
       tl.to(cap.mesh.rotation, {
         x: capPitchTotal,
         duration: (tG1 - tG0),
         ease: "power2.inOut"
       }, tG0);
 
-      // H) Cap moves Ta → Tc (4.60–5.00), stops short
       tl.to(cap.mesh.position, {
-        x: capFinalPosition.x, y: capFinalPosition.y, z: capFinalPosition.z + 0.06, // tiny z offset
+        x: capFinalPosition.x,
+        y: capFinalPosition.y,
+        z: capFinalPosition.z + 0.06,
         duration: (tH1 - tH0),
         ease: "power2.out"
       }, tH0);
 
-      // Ensure left is precisely at T by now (and offset slightly)
       tl.to(ornamentL.group.position, {
-        x: ornamentFinalPosition.x, y: ornamentFinalPosition.y, z: ornamentFinalPosition.z + 0.00,
+        x: ornamentFinalPosition.x,
+        y: ornamentFinalPosition.y,
+        z: ornamentFinalPosition.z + 0.00,
         duration: 0.001
       }, tI0 - 0.001);
+    }
 
-      // I) Reparent into assemblyGroup at 5.00, then rotate group 5.00–6.00
+    function addAssemblyTweens(tl) {
       tl.call(() => {
-        // Set pivot at T (already), then reparent all while preserving world transforms
         assemblyGroup.position.copy(titleAnchorPosition);
         letterGroup.position.copy(titleAnchorPosition);
         assemblyGroup.rotation.set(0, 0, 0);
@@ -907,14 +1246,9 @@
         duration: (tI1 - tI0),
         ease: "power2.inOut"
       }, tI0);
+    }
 
-      // Optional: fade outlines out at end
-      tl.to(outlineMats, {
-        opacity: 0,
-        duration: 0.4,
-        ease: "power1.out"
-      }, 5.2);
-
+    function addFinalSpinTweens(tl) {
       tl.to(assemblyGroup.rotation, {
         y: 0,
         duration: (tJ1 - tJ0),
@@ -926,13 +1260,34 @@
         duration: (tK1 - tK0),
         ease: "linear"
       }, tK0);
+    }
 
-      // Play once; set to repeat(-1) if you want looping
+    function buildTimeline() {
+      if (tl) tl.kill();
+
+      resetSceneState();
+      createTitleLetters();
+      ensureDirectSceneParenting();
+      resetOutlineOpacity();
+
+      tl = gsap.timeline({
+        defaults: { overwrite: false },
+        duration: 6.0
+      });
+
+      addLetterTweens(tl);
+      addOutlineTweens(tl);
+      addLiftTweens(tl);
+      addTravelTweens(tl);
+      addDropAndCapTweens(tl);
+      addAssemblyTweens(tl);
+      addFinalSpinTweens(tl);
+
       tl.play(0);
     }
 
     buildTimeline();
-    
+
     tl.timeScale(0.5);
 
     document.getElementById("restart").addEventListener("click", () => {
