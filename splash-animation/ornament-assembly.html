@@ -50,10 +50,15 @@
   </div>
 
   <script type="module">
+
+    // -------------------------
+    // Imports
+    // -------------------------
     import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
     import { gsap } from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm";
+
     // -------------------------
-    // Constants (tweak here)
+    // Constants
     // -------------------------
     const ornamentRadius = 1.6;          // ornament radius
     const capRadius = 0.45 * ornamentRadius;     // cap radius
@@ -69,16 +74,13 @@
     const rightAssemblyApproachPosition = new THREE.Vector3(0, 1.4 * ornamentRadius, assemblyZ);
     const capAssemblyApproachPosition = new THREE.Vector3(0, 2 * ornamentRadius, assemblyZ);
     const leftAssemblyApproachPosition = new THREE.Vector3(rightAssemblyApproachPosition.x, -rightAssemblyApproachPosition.y + 0.3 * ornamentRadius, rightAssemblyApproachPosition.z);
-    // const Tc = new THREE.Vector3(0, 0.6 * capRad, zAssemble);
     const capFinalPosition = new THREE.Vector3(0, 0.96 * ornamentRadius, assemblyZ);
 
     // title anchor is location of the "O"
     const titleAnchorPosition = new THREE.Vector3(0, 0, assemblyZ);
 
-
     const leftStartPosition = new THREE.Vector3(-1.1 * ornamentRadius, 0, 0);
     const rightStartPosition = new THREE.Vector3(+1.1 * ornamentRadius, 0, 0);
-    // const C0 = new THREE.Vector3(0, paperH / 2 - 0.8 * ornamentRad, 0);
     const capStartPosition = new THREE.Vector3(0, 1.3 * ornamentRadius, 0);
 
     // Lifted positions (end of Phase C)
@@ -140,8 +142,14 @@
     };
 
     // -------------------------
-    // Three.js scene setup
+    // Scene helpers
     // -------------------------
+
+    function createScene() {
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.Fog(0x0b0b0c, 10, 30);
+      return scene;
+    }
 
     function createRenderer() {
       const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -175,60 +183,14 @@
       scene.add(rimLight);
     }
 
-    function createScene() {
-      const scene = new THREE.Scene();
-      scene.fog = new THREE.Fog(0x0b0b0c, 10, 30);
-      return scene;
-    }
-
     function exposeDebugGlobals({ scene, camera, assemblyGroup }) {
       window.scene = scene;
       window.camera = camera;
       window.assemblyGroup = assemblyGroup;
     }
 
-    // const scene = new THREE.Scene();
-
-    const renderer = createRenderer();
-
-    // Debugging trick - expose scene
-    // In console, type 'scene' 
-    // window.scene = scene;
-
-    // scene.fog = new THREE.Fog(0x0b0b0c, 10, 30);
-
-
-    const scene = createScene();
-    // window.scene = scene;
-    // const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
-    // camera.position.set(0, 0.6, 10);
-
-    const camera = createCamera();
-
-    addSceneLights(scene);
-
-    // renderer.setSize(window.innerWidth, window.innerHeight);
-    // renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    // document.body.appendChild(renderer.domElement);
-
-    //   const controls = new OrbitControls(camera, renderer.domElement);
-    //   controls.enableDamping = true;
-    //   controls.enabled = false; // keep camera fixed for the spec; toggle true if you want to inspect
-
-    // // Lights (simple but readable)
-    // scene.add(new THREE.AmbientLight(0xffffff, 2));
-
-    // const dir = new THREE.DirectionalLight(0xffffff, 1.2);
-    // dir.position.set(3, 5, 6);
-    // scene.add(dir);
-
-    // // Subtle back light for edge definition
-    // const rim = new THREE.DirectionalLight(0xffffff, 0.55);
-    // rim.position.set(-4, 2, -6);
-    // scene.add(rim);
-
     // -------------------------
-    // Materials
+    // Material / texture helpers
     // -------------------------
 
     function loadTexture(path) {
@@ -295,24 +257,8 @@
     }
 
 
-
-    const paperMat = makePaperMaterial();
-
-    const ornamentTextureALeft = configureOrnamentTexture(loadTexture("mahoneyCardALeft.png"));
-    const ornamentTextureARight = configureOrnamentTexture(loadTexture("mahoneyCardARight.png"));
-    const ornamentTextureBLeft = configureOrnamentTexture(loadTexture("mahoneyCardBLeft.png"));
-    const ornamentTextureBRight = configureOrnamentTexture(loadTexture("mahoneyCardBRight.png"));
-
-    const capTexture = configureCapTexture(loadTexture("mahoneyCardCap.png"));
-
-    const outlineMat = new THREE.LineBasicMaterial({
-      color: 0x222222,
-      transparent: true,
-      opacity: 0.0
-    });
-
     // -------------------------
-    // Helpers: shapes + outlines
+    // Geometry / mesh helpers
     // -------------------------
     function roundedRectPath(x, y, w, h, r) {
       // returns a THREE.Shape path (not closed automatically)
@@ -375,71 +321,8 @@
       return new THREE.LineLoop(geo, outlineMat.clone());
     }
 
-    function buildPaperMesh() {
-      const paperGeo = new THREE.PlaneGeometry(paperWidth, paperHeight, 1, 1);
-      const paperMesh = new THREE.Mesh(paperGeo, paperMat);
-      paperMesh.position.set(0, 0.3 * ornamentRadius, 0);
-      return paperMesh;
-    }
 
-    function setInitialPieceTransforms() {
-      ornamentL.group.position.copy(leftStartPosition);
-      ornamentR.group.position.copy(rightStartPosition);
-      cap.mesh.position.copy(capStartPosition);
 
-      ornamentL.group.rotation.set(0, 0, 0);
-      ornamentR.group.rotation.set(0, 0, 0);
-      cap.mesh.rotation.set(0, 0, 0);
-    }
-
-    function createOutlineGroup() {
-      const group = new THREE.Group();
-      group.position.set(0, 0, 0);
-
-      const leftCircleOutline = lineFromShape(ornamentL.circleShape);
-      const leftBumpOutline = lineFromShape(ornamentL.bumpShape);
-      leftCircleOutline.position.copy(leftStartPosition);
-      leftBumpOutline.position.copy(leftStartPosition);
-
-      const rightCircleOutline = lineFromShape(ornamentR.circleShape);
-      const rightBumpOutline = lineFromShape(ornamentR.bumpShape);
-      rightCircleOutline.position.copy(rightStartPosition);
-      rightBumpOutline.position.copy(rightStartPosition);
-
-      const capOutline = lineFromShape(cap.shape);
-      capOutline.position.copy(capStartPosition);
-
-      group.add(
-        leftCircleOutline,
-        leftBumpOutline,
-        rightCircleOutline,
-        rightBumpOutline,
-        capOutline
-      );
-
-      return group;
-    }
-
-    function createAssemblyGroups() {
-      const ornamentAssemblyGroup = new THREE.Group();
-      const titleLetterGroup = new THREE.Group();
-
-      ornamentAssemblyGroup.position.copy(ornamentFinalPosition);
-
-      scene.add(ornamentAssemblyGroup);
-      scene.add(titleLetterGroup);
-
-      return {
-        ornamentAssemblyGroup,
-        titleLetterGroup
-      };
-    }
-
-    // -------------------------
-    // Build paper
-    // -------------------------
-    const paper = buildPaperMesh();
-    scene.add(paper);
 
     function makeFaceGroups({ circleGeo, bumpGeo, matA, matB, matBump, paperThickness }) {
       const frontCircleMesh = new THREE.Mesh(circleGeo, matA);
@@ -472,76 +355,202 @@
     }
 
     // -------------------------
-    // Build cutouts + outlines
+    // Piece builders
     // -------------------------
-    // Ornament piece = group of (circle extrusion + bump extrusion) so it looks like a single fused piece.
-    function makeOrnamentPiece({ textureA, textureB }) {
 
-      const matA = makeTexturedFaceMaterial(textureA);
-      const matB = makeTexturedFaceMaterial(textureB);
-      const matCapsInvisible = makeInvisibleCapMaterial();
-      const matSide = makeOrnamentEdgeMaterial();
-      const matBump = makeBumpMaterial();
+    function createOrnamentPiece({
+      frontTexture,
+      backTexture,
+      ornamentRadius,
+      thickness
+    }) {
+      function configureFaceTexture(texture) {
+        const imageScale = 1 / (2 * ornamentRadius);
+        texture.offset.set(0.5, 0.5);
+        texture.repeat.set(imageScale, imageScale);
+        return texture;
+      }
 
-      const { circleShape, bumpShape } = makeOrnamentShape();
+      function createPieceMaterials() {
+        const configuredFrontTexture = configureFaceTexture(frontTexture);
+        const configuredBackTexture = configureFaceTexture(backTexture);
 
-      const circleGeo = new THREE.ShapeGeometry(circleShape, 64);
-      const bumpGeo = new THREE.ShapeGeometry(bumpShape, 64);
+        return {
+          frontFaceMaterial: makeTexturedFaceMaterial(configuredFrontTexture),
+          backFaceMaterial: makeTexturedFaceMaterial(configuredBackTexture),
+          hiddenCapMaterial: makeInvisibleCapMaterial(),
+          edgeMaterial: makeOrnamentEdgeMaterial(),
+          bumpMaterial: makeBumpMaterial()
+        };
+      }
 
-      const { frontGroup, backGroup } = makeFaceGroups({
-        circleGeo,
-        bumpGeo,
-        matA,
-        matB,
-        matBump,
-        paperThickness
+      function createPieceShapes() {
+        return makeOrnamentShape();
+      }
+
+      function createPieceFaceGroups({ circleShape, bumpShape, materials }) {
+        const circleGeometry = new THREE.ShapeGeometry(circleShape, 64);
+        const bumpGeometry = new THREE.ShapeGeometry(bumpShape, 64);
+
+        return makeFaceGroups({
+          circleGeo: circleGeometry,
+          bumpGeo: bumpGeometry,
+          matA: materials.frontFaceMaterial,
+          matB: materials.backFaceMaterial,
+          matBump: materials.bumpMaterial,
+          paperThickness: thickness
+        });
+      }
+
+      function createPieceEdgeMeshes({ circleShape, bumpShape, materials }) {
+        return {
+          circleEdgeMesh: makeEdgeMesh(
+            circleShape,
+            thickness,
+            materials.hiddenCapMaterial,
+            materials.edgeMaterial
+          ),
+          bumpEdgeMesh: makeEdgeMesh(
+            bumpShape,
+            thickness,
+            materials.hiddenCapMaterial,
+            materials.bumpMaterial
+          )
+        };
+      }
+
+      const materials = createPieceMaterials();
+      const { circleShape, bumpShape } = createPieceShapes();
+      const { frontGroup, backGroup } = createPieceFaceGroups({
+        circleShape,
+        bumpShape,
+        materials
+      });
+      const { circleEdgeMesh, bumpEdgeMesh } = createPieceEdgeMeshes({
+        circleShape,
+        bumpShape,
+        materials
       });
 
-      const circleSideMesh = makeEdgeMesh(circleShape, paperThickness, matCapsInvisible, matSide);
-      const bumpSideMesh = makeEdgeMesh(bumpShape, paperThickness, matCapsInvisible, matBump);
+      const group = new THREE.Group();
+      group.add(frontGroup);
+      group.add(backGroup);
+      group.add(circleEdgeMesh);
+      group.add(bumpEdgeMesh);
 
-      const g = new THREE.Group();
-      g.add(frontGroup);
-      g.add(backGroup);
-      g.add(circleSideMesh);
-      g.add(bumpSideMesh);
-
-      // Pivot at main circle center is already (0,0,0)
-      return { group: g, circleShape: circleShape, bumpShape: bumpShape };
+      return {
+        group,
+        circleShape,
+        bumpShape
+      };
     }
 
-    function makeCapPiece(texture) {
+    function createCapPiece({ texture, capRadius, thickness }) {
+      function configureCapTexture(texture) {
+        texture.offset.set(0.5, 0.5);
+        texture.repeat.set(1 / ornamentRadius, 1 / ornamentRadius);
+        return texture;
+      }
 
-      const mat = makeCapMaterial(texture);
+      function createCapShape() {
+        const shape = new THREE.Shape();
+        shape.absarc(0, 0, capRadius, 0, Math.PI * 2, false);
+        return shape;
+      }
 
-      const s = new THREE.Shape();
-      s.absarc(0, 0, capRadius, 0, Math.PI * 2, false);
-      const mesh = new THREE.Mesh(extrudeShape(s, paperThickness), mat);
-      return { mesh, shape: s };
+      function createCapMaterial(texture) {
+        return new THREE.MeshStandardMaterial({
+          map: configureCapTexture(texture),
+          roughness: 0.85,
+          metalness: 0.0
+        });
+      }
+
+      const shape = createCapShape();
+      const material = createCapMaterial(texture);
+      const mesh = new THREE.Mesh(extrudeShape(shape, thickness), material);
+
+      return { mesh, shape };
     }
 
-    const ornamentL = makeOrnamentPiece(
-      {
-        textureA: ornamentTextureALeft,
-        textureB: ornamentTextureBRight
-      }
-    );
-    const ornamentR = makeOrnamentPiece(
-      {
-        textureA: ornamentTextureARight,
-        textureB: ornamentTextureBLeft
-      }
-    );
-    const cap = makeCapPiece(capTexture);
 
-    setInitialPieceTransforms();
-    scene.add(ornamentL.group, ornamentR.group, cap.mesh);
+    // -------------------------
+    // Scene construction helpers
+    // -------------------------
 
-    const outlineGroup = createOutlineGroup();
-    scene.add(outlineGroup);
+    function buildPaperMesh() {
+      const paperGeo = new THREE.PlaneGeometry(paperWidth, paperHeight, 1, 1);
+      const paperMesh = new THREE.Mesh(paperGeo, paperMat);
+      paperMesh.position.set(0, 0.3 * ornamentRadius, 0);
+      return paperMesh;
+    }
 
-    // Collect outline materials for fading
-    const outlineMats = outlineGroup.children.map(line => line.material);
+
+
+    function setInitialPieceTransforms({
+      leftOrnamentPiece,
+      rightOrnamentPiece,
+      capPiece
+    }) {
+      leftOrnamentPiece.group.position.copy(leftStartPosition);
+      rightOrnamentPiece.group.position.copy(rightStartPosition);
+      capPiece.mesh.position.copy(capStartPosition);
+
+      leftOrnamentPiece.group.rotation.set(0, 0, 0);
+      rightOrnamentPiece.group.rotation.set(0, 0, 0);
+      capPiece.mesh.rotation.set(0, 0, 0);
+    }
+
+    function createOutlineGroup({
+      leftOrnamentPiece,
+      rightOrnamentPiece,
+      capPiece
+    }) {
+      const group = new THREE.Group();
+      group.position.set(0, 0, 0);
+
+      const leftCircleOutline = lineFromShape(leftOrnamentPiece.circleShape);
+      const leftBumpOutline = lineFromShape(leftOrnamentPiece.bumpShape);
+      leftCircleOutline.position.copy(leftStartPosition);
+      leftBumpOutline.position.copy(leftStartPosition);
+
+      const rightCircleOutline = lineFromShape(rightOrnamentPiece.circleShape);
+      const rightBumpOutline = lineFromShape(rightOrnamentPiece.bumpShape);
+      rightCircleOutline.position.copy(rightStartPosition);
+      rightBumpOutline.position.copy(rightStartPosition);
+
+      const capOutline = lineFromShape(capPiece.shape);
+      capOutline.position.copy(capStartPosition);
+
+      group.add(
+        leftCircleOutline,
+        leftBumpOutline,
+        rightCircleOutline,
+        rightBumpOutline,
+        capOutline
+      );
+
+      return group;
+    }
+
+    function createAssemblyGroups() {
+      const ornamentAssemblyGroup = new THREE.Group();
+      const titleLetterGroup = new THREE.Group();
+
+      ornamentAssemblyGroup.position.copy(ornamentFinalPosition);
+
+      scene.add(ornamentAssemblyGroup);
+      scene.add(titleLetterGroup);
+
+      return {
+        ornamentAssemblyGroup,
+        titleLetterGroup
+      };
+    }
+
+    // -------------------------
+    // Title / letter helpers
+    // -------------------------
 
     // -------------------------
     // Curves
@@ -567,17 +576,9 @@
       localMatrix.decompose(obj.position, obj.quaternion, obj.scale);
     }
 
-    // Assembly group (pivot at T)
-    const {
-      ornamentAssemblyGroup: assemblyGroup,
-      titleLetterGroup: letterGroup
-    } = createAssemblyGroups();
 
-    exposeDebugGlobals({
-      scene,
-      camera,
-      assemblyGroup
-    });
+
+
 
     // -------------------------
     // Title letter helpers
@@ -679,23 +680,29 @@
         letterGroup.add(sprite);
       }
     }
+
     // -------------------------
-    // GSAP Timeline (total 6.0s)
+    // Motion path helpers
     // -------------------------
-    let tl;
+
+    // ??? curve creation?
+
+    // -------------------------
+    // Timeline helpers
+    // -------------------------
 
     function resetSceneState() {
-      ornamentL.group.position.copy(leftStartPosition);
-      ornamentR.group.position.copy(rightStartPosition);
-      cap.mesh.position.copy(capStartPosition);
+      leftOrnamentPiece.group.position.copy(leftStartPosition);
+      rightOrnamentPiece.group.position.copy(rightStartPosition);
+      capPiece.mesh.position.copy(capStartPosition);
 
-      ornamentL.group.rotation.set(0, 0, 0);
-      ornamentR.group.rotation.set(0, 0, 0);
-      cap.mesh.rotation.set(0, 0, 0);
+      leftOrnamentPiece.group.rotation.set(0, 0, 0);
+      rightOrnamentPiece.group.rotation.set(0, 0, 0);
+      capPiece.mesh.rotation.set(0, 0, 0);
 
       assemblyGroup.rotation.set(0, 0, 0);
 
-      paper.position.set(0, 0.3 * ornamentRadius, 0);
+      paperMesh.position.set(0, 0.3 * ornamentRadius, 0);
       paperMat.opacity = 1;
 
       titleAnchorPosition.set(0, 0, assemblyZ);
@@ -705,9 +712,9 @@
     }
 
     function ensureDirectSceneParenting() {
-      if (ornamentL.group.parent !== scene) reparentPreserveWorld(ornamentL.group, scene);
-      if (ornamentR.group.parent !== scene) reparentPreserveWorld(ornamentR.group, scene);
-      if (cap.mesh.parent !== scene) reparentPreserveWorld(cap.mesh, scene);
+      if (leftOrnamentPiece.group.parent !== scene) reparentPreserveWorld(leftOrnamentPiece.group, scene);
+      if (rightOrnamentPiece.group.parent !== scene) reparentPreserveWorld(rightOrnamentPiece.group, scene);
+      if (capPiece.mesh.parent !== scene) reparentPreserveWorld(capPiece.mesh, scene);
     }
 
     function resetOutlineOpacity() {
@@ -793,7 +800,7 @@
     }
 
     function addLiftTweens(tl) {
-      tl.to(ornamentL.group.position, {
+      tl.to(leftOrnamentPiece.group.position, {
         x: leftLiftedPosition.x,
         y: leftLiftedPosition.y,
         z: leftLiftedPosition.z,
@@ -801,7 +808,7 @@
         ease: "power2.out"
       }, tC0);
 
-      tl.to(ornamentR.group.position, {
+      tl.to(rightOrnamentPiece.group.position, {
         x: rightLiftedPosition.x,
         y: rightLiftedPosition.y,
         z: rightLiftedPosition.z,
@@ -809,7 +816,7 @@
         ease: "power2.out"
       }, tC0);
 
-      tl.to(cap.mesh.position, {
+      tl.to(capPiece.mesh.position, {
         x: capLiftedPosition.x,
         y: capLiftedPosition.y,
         z: capLiftedPosition.z,
@@ -828,7 +835,7 @@
         ease: "power2.inOut",
         onUpdate: () => {
           const p = leftCurve.getPoint(leftU.u);
-          ornamentL.group.position.copy(p);
+          leftOrnamentPiece.group.position.copy(p);
         }
       }, tD0);
 
@@ -838,29 +845,29 @@
         ease: "power2.inOut",
         onUpdate: () => {
           const p = rightCurve.getPoint(rightU.u);
-          ornamentR.group.position.copy(p);
+          rightOrnamentPiece.group.position.copy(p);
         }
       }, tD0);
 
-      tl.to(ornamentL.group.rotation, {
+      tl.to(leftOrnamentPiece.group.rotation, {
         y: leftYawTotal,
         duration: (tD1 - tD0),
         ease: "power2.inOut"
       }, tD0);
 
-      tl.to(ornamentR.group.rotation, {
+      tl.to(rightOrnamentPiece.group.rotation, {
         y: rightYawTotal,
         duration: (tD1 - tD0),
         ease: "power2.inOut"
       }, tD0);
 
-      tl.to(cap.mesh.position, {
+      tl.to(capPiece.mesh.position, {
         z: -1 * ornamentRadius,
         duration: (tD1 - tD0),
         ease: "power2.inOut"
       }, tD0);
 
-      tl.to(paper.position, {
+      tl.to(paperMesh.position, {
         z: -10,
         duration: (tD1 - tD0),
         ease: "power2.inOut"
@@ -874,7 +881,7 @@
     }
 
     function addDropAndCapTweens(tl) {
-      tl.to(ornamentR.group.position, {
+      tl.to(rightOrnamentPiece.group.position, {
         x: ornamentFinalPosition.x,
         y: ornamentFinalPosition.y,
         z: ornamentFinalPosition.z + 0.03,
@@ -882,7 +889,7 @@
         ease: "power2.inOut"
       }, tE0);
 
-      tl.to(ornamentL.group.position, {
+      tl.to(leftOrnamentPiece.group.position, {
         x: ornamentFinalPosition.x,
         y: ornamentFinalPosition.y,
         z: ornamentFinalPosition.z + 0.00,
@@ -897,17 +904,17 @@
         ease: "power2.inOut",
         onUpdate: () => {
           const p = capCurve.getPoint(capU.u);
-          cap.mesh.position.copy(p);
+          capPiece.mesh.position.copy(p);
         }
       }, tF0);
 
-      tl.to(cap.mesh.rotation, {
+      tl.to(capPiece.mesh.rotation, {
         x: capPitchTotal,
         duration: (tG1 - tG0),
         ease: "power2.inOut"
       }, tG0);
 
-      tl.to(cap.mesh.position, {
+      tl.to(capPiece.mesh.position, {
         x: capFinalPosition.x,
         y: capFinalPosition.y,
         z: capFinalPosition.z + 0.06,
@@ -915,7 +922,7 @@
         ease: "power2.out"
       }, tH0);
 
-      tl.to(ornamentL.group.position, {
+      tl.to(leftOrnamentPiece.group.position, {
         x: ornamentFinalPosition.x,
         y: ornamentFinalPosition.y,
         z: ornamentFinalPosition.z + 0.00,
@@ -929,9 +936,9 @@
         letterGroup.position.copy(titleAnchorPosition);
         assemblyGroup.rotation.set(0, 0, 0);
 
-        reparentPreserveWorld(ornamentL.group, assemblyGroup);
-        reparentPreserveWorld(ornamentR.group, assemblyGroup);
-        reparentPreserveWorld(cap.mesh, assemblyGroup);
+        reparentPreserveWorld(leftOrnamentPiece.group, assemblyGroup);
+        reparentPreserveWorld(rightOrnamentPiece.group, assemblyGroup);
+        reparentPreserveWorld(capPiece.mesh, assemblyGroup);
       }, [], tI0);
 
       tl.to(titleAnchorPosition, {
@@ -990,17 +997,107 @@
       tl.play(0);
     }
 
-    buildTimeline();
+    // -------------------------
+    // Storyboard
+    // -------------------------
 
+    // Scene
+    const scene = createScene();
+    const renderer = createRenderer();
+    // const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+    // camera.position.set(0, 0.6, 10);
+    const camera = createCamera();
+
+    // Lights
+    addSceneLights(scene);
+
+    // Textures
+    const ornamentTextureALeft = configureOrnamentTexture(loadTexture("mahoneyCardALeft.png"));
+    const ornamentTextureARight = configureOrnamentTexture(loadTexture("mahoneyCardARight.png"));
+    const ornamentTextureBLeft = configureOrnamentTexture(loadTexture("mahoneyCardBLeft.png"));
+    const ornamentTextureBRight = configureOrnamentTexture(loadTexture("mahoneyCardBRight.png"));
+    const capTexture = configureCapTexture(loadTexture("mahoneyCardCap.png"));
+
+    // Materials
+    const paperMat = makePaperMaterial();
+    const outlineMat = new THREE.LineBasicMaterial({
+      color: 0x222222,
+      transparent: true,
+      opacity: 0.0
+    });
+
+    // Paper
+    const paperMesh = buildPaperMesh();
+    scene.add(paperMesh);
+
+    // Pieces
+    const leftOrnamentPiece = createOrnamentPiece({
+      frontTexture: ornamentTextureALeft,
+      backTexture: ornamentTextureBRight,
+      ornamentRadius,
+      thickness: paperThickness
+    });
+
+    const rightOrnamentPiece = createOrnamentPiece({
+      frontTexture: ornamentTextureARight,
+      backTexture: ornamentTextureBLeft,
+      ornamentRadius,
+      thickness: paperThickness
+    });
+
+    const capPiece = createCapPiece({
+      texture: capTexture,
+      capRadius,
+      thickness: paperThickness
+    });
+
+    setInitialPieceTransforms({
+      leftOrnamentPiece,
+      rightOrnamentPiece,
+      capPiece
+    }
+    );
+    scene.add(leftOrnamentPiece.group, rightOrnamentPiece.group, capPiece.mesh);
+
+    // Outlines
+    const outlineGroup = createOutlineGroup({
+      leftOrnamentPiece,
+      rightOrnamentPiece,
+      capPiece
+    });
+    scene.add(outlineGroup);
+
+
+    // Collect outline materials for fading
+    const outlineMats = outlineGroup.children.map(line => line.material);
+
+    // Groups
+    const {
+      ornamentAssemblyGroup: assemblyGroup,
+      titleLetterGroup: letterGroup
+    } = createAssemblyGroups();
+
+    // Debug
+    exposeDebugGlobals({
+      scene,
+      camera,
+      assemblyGroup
+    });
+
+    // Timeline
+
+    let tl;
+    buildTimeline();
     tl.timeScale(0.5);
+
+    // Connect UI
 
     document.getElementById("restart").addEventListener("click", () => {
       buildTimeline();
     });
 
-    // -------------------------
-    // Render loop
-    // -------------------------
+    // Render
+
     function animate() {
       requestAnimationFrame(animate);
       // controls.update();
@@ -1008,14 +1105,14 @@
     }
     animate();
 
-    // -------------------------
-    // Resize
-    // -------------------------
+    // Handle resize
+
     window.addEventListener("resize", () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
+
   </script>
 </body>
 
