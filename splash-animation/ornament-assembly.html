@@ -51,34 +51,35 @@
 
   <script type="module">
     import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
-    //   import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
-    //   import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js";
-    //   import gsap from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/index.js";
     import { gsap } from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm";
-
     // -------------------------
     // Constants (tweak here)
     // -------------------------
-    const ornamentRad = 1.0;          // ornament radius
+    const ornamentRad = 1.6;          // ornament radius
     const capRad = 0.45 * ornamentRad;     // cap radius
 
-    const paperW = 6.0;
-    const paperH = 4.0;
+    const paperW = 7.0;
+    const paperH = 5.0;
 
-    const zLift = 0.25 * ornamentRad;
-    const zAssemble = 0.60; // slightly above paper
+    const paperThickness = 0.02;
+
+    const zLift = 0.5 * ornamentRad;
+    const zAssemble = 1*ornamentRad; // slightly above paper
     const T = new THREE.Vector3(0, 0, zAssemble);
-    const Ta = new THREE.Vector3(0, 3 * ornamentRad, zAssemble);
+    const TaRight = new THREE.Vector3(0, 1.4 * ornamentRad, zAssemble);
+    const Tacap = new THREE.Vector3(0, 2 * ornamentRad, zAssemble);
+    const TaLeft = new THREE.Vector3(TaRight.x, -TaRight.y + 0.3*ornamentRad, TaRight.z);
     // const Tc = new THREE.Vector3(0, 0.6 * capRad, zAssemble);
-    const Tc = new THREE.Vector3(0, 0.96*ornamentRad, zAssemble);
+    const Tc = new THREE.Vector3(0, 0.96 * ornamentRad, zAssemble);
 
     // title anchor is location of the "O"
     const titleAnchor = new THREE.Vector3(0, 0, zAssemble);
 
 
-    const L0 = new THREE.Vector3(-1.6 * ornamentRad, 0, 0);
-    const R0 = new THREE.Vector3(+1.6 * ornamentRad, 0, 0);
-    const C0 = new THREE.Vector3(0, paperH / 2 - 0.8 * ornamentRad, 0);
+    const L0 = new THREE.Vector3(-1.1 * ornamentRad, 0, 0);
+    const R0 = new THREE.Vector3(+1.1 * ornamentRad, 0, 0);
+    // const C0 = new THREE.Vector3(0, paperH / 2 - 0.8 * ornamentRad, 0);
+    const C0 = new THREE.Vector3(0, 1.3*ornamentRad, 0);
 
     // Lifted positions (end of Phase C)
     const L1 = L0.clone().add(new THREE.Vector3(-0.1 * ornamentRad, -0.05 * ornamentRad, zLift));
@@ -86,8 +87,8 @@
     const C1 = C0.clone().add(new THREE.Vector3(0, +0.05 * ornamentRad, zLift));
 
     // Quadratic Bezier control points
-    const Lc = new THREE.Vector3(-0.6 * ornamentRad, +1.2 * ornamentRad, zLift + 0.4 * ornamentRad);
-    const RcC = new THREE.Vector3(+0.6 * ornamentRad, +1.8 * ornamentRad, zLift + 0.4 * ornamentRad);
+    const Lc = new THREE.Vector3(-0.6 * ornamentRad, -1.8 * ornamentRad, zLift + 0.4 * ornamentRad);
+    const Rc = new THREE.Vector3(+0.6 * ornamentRad, +1.8 * ornamentRad, zLift + 0.4 * ornamentRad);
     const Cc = new THREE.Vector3(0, +2.2 * ornamentRad, zLift + 0.6 * ornamentRad);
 
     // Rotation totals
@@ -133,7 +134,7 @@
       arcHeight: 1,
 
       spacing: 0.7,
-      widthScale: 0.006,
+      widthScale: 0.0042,
       tracking: 0.0,
       wordGapExtra: 0.0,
 
@@ -146,12 +147,46 @@
     // Three.js scene setup
     // -------------------------
     const scene = new THREE.Scene();
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+  
+    // renderer.setSize(window.innerWidth, window.innerHeight);
+    // renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // document.body.appendChild(renderer.domElement);
+
+    // const pmrem = new THREE.PMREMGenerator(renderer);
+    // pmrem.compileCubemapShader();
+
+    // const environment = new RoomEnvironment();
+    // const envRT = pmrem.fromScene(environment);
+    // scene.environment = envRT.texture;
+
+    // console.log("envRT", envRT);
+    // console.log("env texture", envRT.texture);
+
+
+    // const pmrem = new THREE.PMREMGenerator(renderer);
+
+    // const environment = new RoomEnvironment();
+
+    // console.log("RoomEnvironment", RoomEnvironment);
+    // console.log("pmrem", pmrem);
+    // const envMap = pmrem.fromScene(environment).texture;
+    
+
+    // scene.environment = envMap;
+
+    // Debugging trick - expose scene
+    // In console, type 'scene' 
+    window.scene = scene;
+
     scene.fog = new THREE.Fog(0x0b0b0c, 10, 30);
 
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(0, 0.6, 10);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     document.body.appendChild(renderer.domElement);
@@ -161,13 +196,14 @@
     //   controls.enabled = false; // keep camera fixed for the spec; toggle true if you want to inspect
 
     // Lights (simple but readable)
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    scene.add(new THREE.AmbientLight(0xffffff, 2));
+
+    const dir = new THREE.DirectionalLight(0xffffff, 1.2);
     dir.position.set(3, 5, 6);
     scene.add(dir);
 
     // Subtle back light for edge definition
-    const rim = new THREE.DirectionalLight(0xffffff, 0.35);
+    const rim = new THREE.DirectionalLight(0xffffff, 0.55);
     rim.position.set(-4, 2, -6);
     scene.add(rim);
 
@@ -175,23 +211,38 @@
     // Materials
     // -------------------------
     const paperMat = new THREE.MeshStandardMaterial({
-      color: 0xf2f2f0,
-      roughness: 0.95,
-      metalness: 0.0
+      // color: 0xf2f2f0,
+      // color: 0x123456,
+      color: 0xfaf7f0,
+      // color: 0xfcf9f2,
+      roughness: 0.9,
+      metalness: 0.0,
+      transparent: true
     });
 
     // use image instead of color applied to ornament
     const ornamentTextureLoaderALeft = new THREE.TextureLoader();
-
-    const ornamentTextureALeft = ornamentTextureLoaderALeft.load("mahoneyCardALeft.png");
-
     const ornamentTextureLoaderARight = new THREE.TextureLoader();
+    const ornamentTextureLoaderBLeft = new THREE.TextureLoader();
+    const ornamentTextureLoaderBRight = new THREE.TextureLoader();
 
+    // const ornamentTextureALeft = ornamentTextureLoaderALeft.load("mahoneyCardALeft.png",
+    //   () => console.log("loaded image that we are testing.png"),
+    //   undefined,
+    //   (err) => console.error("failed to load image that we are testing.png", err)
+    // );
+    const ornamentTextureALeft = ornamentTextureLoaderALeft.load("mahoneyCardALeft.png");
     const ornamentTextureARight = ornamentTextureLoaderARight.load("mahoneyCardARight.png");
+    const ornamentTextureBLeft = ornamentTextureLoaderBLeft.load("mahoneyCardBLeft.png");
+    const ornamentTextureBRight = ornamentTextureLoaderBRight.load("mahoneyCardBRight.png");
+
+    ornamentTextureALeft.colorSpace = THREE.SRGBColorSpace;
+    ornamentTextureARight.colorSpace = THREE.SRGBColorSpace;
+    ornamentTextureBLeft.colorSpace = THREE.SRGBColorSpace;
+    ornamentTextureBRight.colorSpace = THREE.SRGBColorSpace;
 
     // use image instead of color applied to ornament
     const capTextureLoader = new THREE.TextureLoader();
-
     const capTexture = capTextureLoader.load("mahoneyCardCap.png");
 
     // const capMat = new THREE.MeshStandardMaterial({
@@ -286,50 +337,138 @@
     // -------------------------
     const paperGeo = new THREE.PlaneGeometry(paperW, paperH, 1, 1);
     const paper = new THREE.Mesh(paperGeo, paperMat);
-    paper.position.set(0, 0, 0);
+    paper.position.set(0, 0.3*ornamentRad, 0);
     scene.add(paper);
 
-    // Optional: dark backing plane for contrast
-    const backing = new THREE.Mesh(
-      new THREE.PlaneGeometry(paperW * 1.35, paperH * 1.35),
-      new THREE.MeshStandardMaterial({ color: 0x101012, roughness: 1 })
-    );
-    backing.position.set(0, 0, -0.08);
-    scene.add(backing);
+    // // Optional: dark backing plane for contrast
+    // const backing = new THREE.Mesh(
+    //   new THREE.PlaneGeometry(paperW * 1.35, paperH * 1.35),
+    //   new THREE.MeshStandardMaterial({ color: 0x101012, roughness: 1 })
+    // );
+    // backing.position.set(0, 0, -0.08);
+    // scene.add(backing);
 
     // -------------------------
     // Build cutouts + outlines
     // -------------------------
     // Ornament piece = group of (circle extrusion + bump extrusion) so it looks like a single fused piece.
-    function makeOrnamentPiece(texture) {
+    function makeOrnamentPiece({ textureA, textureB }) {
 
-      // texture.center.set(0.1, 0.1);
-      texture.offset.set(0.5, 0.5);
-      texture.repeat.set(0.5, 0.5);
+      // Somehow this scales the image to fit the mesh. I 
+      const imageScaleMysteryNumber = (1 / (2 * ornamentRad));
+      // textureA.center.set(0.5, 0.5);
+      textureA.offset.set(0.5, 0.5);
+      textureA.repeat.set(imageScaleMysteryNumber, imageScaleMysteryNumber);
 
-      const mat = new THREE.MeshStandardMaterial({
-        map: texture,
-        roughness: 0.85,
-        metalness: 0.0,
-        polygonOffset: true,
-        polygonOffsetFactor: 1,
-        polygonOffsetUnits: 1
+      // textureB.center.set(0.5, 0.5);
+      textureB.offset.set(0.5, 0.5);
+      textureB.repeat.set(imageScaleMysteryNumber, imageScaleMysteryNumber);
+
+      const matA = new THREE.MeshBasicMaterial({
+        map: textureA,
       });
 
+      const matB = new THREE.MeshBasicMaterial({
+        map: textureB,
+      });
+
+      const matCapsInvisible = new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0
+      });
+
+      const matSide = new THREE.MeshBasicMaterial({
+        // color: 0xff4444,
+        color: 0xffffff,
+        // roughness: 0.85,
+        // metalness: 0.0,
+      });
+
+      const matBump = new THREE.MeshStandardMaterial({
+        color: 0xd9d9d9,
+        roughness: 0.85,
+        metalness: 0.2,
+      });
+
+      // // Silver metal
+      // const matBump = new THREE.MeshStandardMaterial({
+      //   color: 0xd9d9d9,
+      //   metalness: 0.8,
+      //   roughness: 0.25
+      // });
+
+      // // Gold metal
+      // const matBump = new THREE.MeshStandardMaterial({
+      //   color: 0xd4af37,
+      //   metalness: 1.0,
+      //   roughness: 0.3
+      // });
+
       const { circleShape, bumpShape } = makeOrnamentShape();
+
+      const circleGeo = new THREE.ShapeGeometry(circleShape, 64);
+      const bumpGeo = new THREE.ShapeGeometry(bumpShape, 64);
+
+      const frontCircleMesh = new THREE.Mesh(circleGeo, matA);
+      const backCircleMesh = new THREE.Mesh(circleGeo, matB);
+      const frontBumpMesh = new THREE.Mesh(bumpGeo, matBump);
+      const backBumpMesh = new THREE.Mesh(bumpGeo, matBump);
+
+      frontBumpMesh.position.z -= 0.01 * paperThickness
+      backBumpMesh.position.z -= 0.01 * paperThickness
+
+      const circleSideGeo = extrudeShape(circleShape, paperThickness);
+
+      const circleSideMesh = new THREE.Mesh(
+        circleSideGeo,
+        [matCapsInvisible, matSide]
+      );
+
+      const bumpSideGeo = extrudeShape(bumpShape, paperThickness);
+
+      const bumpSideMesh = new THREE.Mesh(
+        bumpSideGeo,
+        [matCapsInvisible, matBump]
+      );
+      // const circleSideGeo = extrudeShape(shape = circleShape, depth = paperThickness);
+      // const matCapsInvisible = new THREE.MeshBasicMaterial({
+      //   transparent: true,
+      //   opacity: 0
+      // });
+
+      // const circleSideMesh = new THREE.Mesh(
+      //   circleSideGeo,
+      //   [matCapsInvisible, matSide]
+      // );
+
+      const frontGroup = new THREE.Group();
+      const backGroup = new THREE.Group();
+
+      frontGroup.add(frontCircleMesh);
+      frontGroup.add(frontBumpMesh);
+
+      backGroup.add(backCircleMesh);
+      backGroup.add(backBumpMesh);
+
+      frontGroup.position.z += paperThickness / 2;
+
+      backGroup.rotation.y = Math.PI; // or rotate around x depending on orientation
+      backGroup.position.z += -paperThickness / 2;
+
       const g = new THREE.Group();
-
-      const circleMesh = new THREE.Mesh(extrudeShape(circleShape, 0.08), mat);
-      const bumpMesh = new THREE.Mesh(extrudeShape(bumpShape, 0.08), mat);
-
-      g.add(circleMesh);
-      g.add(bumpMesh);
-
+      g.add(frontGroup);
+      g.add(backGroup);
+      g.add(circleSideMesh);
+      g.add(bumpSideMesh);
+      // g.add(circleSideMesh);
       // Pivot at main circle center is already (0,0,0)
-      return { group: g, circleShape, bumpShape };
+      return { group: g, circleShape: circleShape, bumpShape: bumpShape };
     }
 
     function makeCapPiece(texture) {
+
+      texture.offset.set(0.5, 0.5);
+      texture.repeat.set(1/(ornamentRad), 1/(ornamentRad));
 
       const mat = new THREE.MeshStandardMaterial({
         map: texture,
@@ -339,12 +478,18 @@
 
       const s = new THREE.Shape();
       s.absarc(0, 0, capRad, 0, Math.PI * 2, false);
-      const mesh = new THREE.Mesh(extrudeShape(s, 0.07), mat);
+      const mesh = new THREE.Mesh(extrudeShape(s, paperThickness), mat);
       return { mesh, shape: s };
     }
 
-    const ornamentL = makeOrnamentPiece(ornamentTextureALeft);
-    const ornamentR = makeOrnamentPiece(ornamentTextureARight);
+    const ornamentL = makeOrnamentPiece(
+        { textureA: ornamentTextureALeft,
+        textureB: ornamentTextureBRight}
+      );
+      const ornamentR = makeOrnamentPiece(
+        { textureA: ornamentTextureARight,
+        textureB: ornamentTextureBLeft}
+      );
     const cap = makeCapPiece(capTexture);
 
     // Place pieces initially on the paper (flat, z=0)
@@ -384,9 +529,9 @@
     // -------------------------
     // Curves
     // -------------------------
-    const leftCurve = new THREE.QuadraticBezierCurve3(L1.clone(), Lc.clone(), T.clone());
-    const rightCurve = new THREE.QuadraticBezierCurve3(R1.clone(), RcC.clone(), Ta.clone());
-    const capCurve = new THREE.QuadraticBezierCurve3(C1.clone(), Cc.clone(), Ta.clone());
+    const leftCurve = new THREE.QuadraticBezierCurve3(L1.clone(), Lc.clone(), TaLeft.clone());
+    const rightCurve = new THREE.QuadraticBezierCurve3(R1.clone(), Rc.clone(), TaRight.clone());
+    const capCurve = new THREE.QuadraticBezierCurve3(C1.clone(), Cc.clone(), Tacap.clone());
 
     // -------------------------
     // Reparent helper (preserve world transform)
@@ -435,7 +580,7 @@
       ctx.fillStyle = "#f6f6f4";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = "bold 220px Arial";
+      ctx.font = "bold 160px Arial";
       ctx.fillText(char, canvas.width / 2, canvas.height / 2 + 8);
 
       const texture = new THREE.CanvasTexture(canvas);
@@ -491,7 +636,7 @@
       letterGroup.clear();
 
       let cursorX = 0.62;
-      let prevGlyphWidth = 1.2*ornamentRad;
+      let prevGlyphWidth = 1.2 * ornamentRad;
 
       for (const ch of titleLetters) {
         if (ch === " ") {
@@ -671,9 +816,33 @@
         ease: "power2.inOut"
       }, tD0);
 
+      tl.to(cap.mesh.position, {
+        z: -1*ornamentRad,
+        duration: (tD1 - tD0),
+        ease: "power2.inOut"
+      }, tD0);
+
+      tl.to(paper.position, {
+        z: -10,
+        duration: (tD1 - tD0),
+        ease: "power2.inOut"
+      }, tD0);
+
+      tl.to(paperMat, {
+        opacity: 0,
+        duration: (tD1 - tD0),
+        ease: "power1.inOut"
+      }, tD0);
+
       // E) Right drops Ta → T (3.20–3.60)
       tl.to(ornamentR.group.position, {
         x: T.x, y: T.y, z: T.z + 0.03, // tiny z offset to prevent fighting
+        duration: (tE1 - tE0),
+        ease: "power2.inOut"
+      }, tE0);
+
+      tl.to(ornamentL.group.position, {
+        x: T.x, y: T.y, z: T.z, // tiny z offset to prevent fighting
         duration: (tE1 - tE0),
         ease: "power2.inOut"
       }, tE0);
@@ -723,7 +892,7 @@
       }, [], tI0);
 
       tl.to(titleAnchor, {
-        x: -5.0,
+        x: -4.0,
         duration: (tI1 - tI0),
         ease: "power2.inOut",
         onUpdate: () => {
@@ -753,7 +922,7 @@
       }, tJ0);
 
       tl.to(assemblyGroup.rotation, {
-        y: 4*groupYawTotal,
+        y: 4 * groupYawTotal,
         duration: (tK1 - tK0),
         ease: "linear"
       }, tK0);
@@ -763,6 +932,8 @@
     }
 
     buildTimeline();
+    
+    tl.timeScale(0.5);
 
     document.getElementById("restart").addEventListener("click", () => {
       buildTimeline();
