@@ -57,89 +57,133 @@
     import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
     import { gsap } from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm";
 
-    // -------------------------
-    // Constants
-    // -------------------------
-    const ornamentRadius = 1.6;          // ornament radius
-    const capRadius = 0.45 * ornamentRadius;     // cap radius
+    // Import all of these things from the config.
+    // Careful with mutable things like Vector3s
+    import {
+      ornamentRadius,
+      capRadius,
+      paperWidth,
+      paperHeight,
+      paperThickness,
+      liftHeight,
+      assemblyZ,
+      ornamentFinalPosition,
+      rightAssemblyApproachPosition,
+      leftAssemblyApproachPosition,
+      capAssemblyApproachPosition,
+      capFinalPosition,
+      titleAnchorPosition,
+      leftStartPosition,
+      rightStartPosition,
+      capStartPosition,
+      leftLiftedPosition,
+      rightLiftedPosition,
+      capLiftedPosition,
+      leftCurveControl,
+      rightCurveControl,
+      capCurveControl,
+      leftYawTotal,
+      rightYawTotal,
+      capPitchTotal,
+      groupYawTotal,
+      tA0, tA1,
+      tB0, tB1,
+      tC0, tC1,
+      tD0, tD1,
+      tE0, tE1,
+      tF0, tF1,
+      tG0, tG1,
+      tH0, tH1,
+      tI0, tI1,
+      tJ0, tJ1,
+      tK0, tK1,
+      titleLetters,
+      letterCfg
+    } from "./config.js";
 
-    const paperWidth = 7.0;
-    const paperHeight = 5.0;
+    // // -------------------------
+    // // Constants
+    // // -------------------------
+    // const ornamentRadius = 1.6;          // ornament radius
+    // const capRadius = 0.45 * ornamentRadius;     // cap radius
 
-    const paperThickness = 0.02;
+    // const paperWidth = 7.0;
+    // const paperHeight = 5.0;
 
-    const liftHeight = 0.5 * ornamentRadius;
-    const assemblyZ = 1 * ornamentRadius; // slightly above paper
-    const ornamentFinalPosition = new THREE.Vector3(0, 0, assemblyZ);
-    const rightAssemblyApproachPosition = new THREE.Vector3(0, 1.4 * ornamentRadius, assemblyZ);
-    const capAssemblyApproachPosition = new THREE.Vector3(0, 2 * ornamentRadius, assemblyZ);
-    const leftAssemblyApproachPosition = new THREE.Vector3(rightAssemblyApproachPosition.x, -rightAssemblyApproachPosition.y + 0.3 * ornamentRadius, rightAssemblyApproachPosition.z);
-    const capFinalPosition = new THREE.Vector3(0, 0.96 * ornamentRadius, assemblyZ);
+    // const paperThickness = 0.02;
 
-    // title anchor is location of the "O"
-    const titleAnchorPosition = new THREE.Vector3(0, 0, assemblyZ);
+    // const liftHeight = 0.5 * ornamentRadius;
+    // const assemblyZ = 1 * ornamentRadius; // slightly above paper
+    // const ornamentFinalPosition = new THREE.Vector3(0, 0, assemblyZ);
+    // const rightAssemblyApproachPosition = new THREE.Vector3(0, 1.4 * ornamentRadius, assemblyZ);
+    // const capAssemblyApproachPosition = new THREE.Vector3(0, 2 * ornamentRadius, assemblyZ);
+    // const leftAssemblyApproachPosition = new THREE.Vector3(rightAssemblyApproachPosition.x, -rightAssemblyApproachPosition.y + 0.3 * ornamentRadius, rightAssemblyApproachPosition.z);
+    // const capFinalPosition = new THREE.Vector3(0, 0.96 * ornamentRadius, assemblyZ);
 
-    const leftStartPosition = new THREE.Vector3(-1.1 * ornamentRadius, 0, 0);
-    const rightStartPosition = new THREE.Vector3(+1.1 * ornamentRadius, 0, 0);
-    const capStartPosition = new THREE.Vector3(0, 1.3 * ornamentRadius, 0);
+    // // title anchor is location of the "O"
+    // const titleAnchorPosition = new THREE.Vector3(0, 0, assemblyZ);
 
-    // Lifted positions (end of Phase C)
-    const leftLiftedPosition = leftStartPosition.clone().add(new THREE.Vector3(-0.1 * ornamentRadius, -0.05 * ornamentRadius, liftHeight));
-    const rightLiftedPosition = rightStartPosition.clone().add(new THREE.Vector3(+0.1 * ornamentRadius, -0.05 * ornamentRadius, liftHeight));
-    const capLiftedPosition = capStartPosition.clone().add(new THREE.Vector3(0, +0.05 * ornamentRadius, liftHeight));
+    // const leftStartPosition = new THREE.Vector3(-1.1 * ornamentRadius, 0, 0);
+    // const rightStartPosition = new THREE.Vector3(+1.1 * ornamentRadius, 0, 0);
+    // const capStartPosition = new THREE.Vector3(0, 1.3 * ornamentRadius, 0);
 
-    // Quadratic Bezier control points
-    const leftCurveControl = new THREE.Vector3(-0.6 * ornamentRadius, -1.8 * ornamentRadius, liftHeight + 0.4 * ornamentRadius);
-    const rightCurveControl = new THREE.Vector3(+0.6 * ornamentRadius, +1.8 * ornamentRadius, liftHeight + 0.4 * ornamentRadius);
-    const capCurveControl = new THREE.Vector3(0, +2.2 * ornamentRadius, liftHeight + 0.6 * ornamentRadius);
+    // // Lifted positions (end of Phase C)
+    // const leftLiftedPosition = leftStartPosition.clone().add(new THREE.Vector3(-0.1 * ornamentRadius, -0.05 * ornamentRadius, liftHeight));
+    // const rightLiftedPosition = rightStartPosition.clone().add(new THREE.Vector3(+0.1 * ornamentRadius, -0.05 * ornamentRadius, liftHeight));
+    // const capLiftedPosition = capStartPosition.clone().add(new THREE.Vector3(0, +0.05 * ornamentRadius, liftHeight));
 
-    // Rotation totals
-    const deg = (d) => d * Math.PI / 180;
-    const leftYawTotal = deg(585);
-    const rightYawTotal = deg(135);
-    const capPitchTotal = deg(450);
-    const groupYawTotal = deg(360);
+    // // Quadratic Bezier control points
+    // const leftCurveControl = new THREE.Vector3(-0.6 * ornamentRadius, -1.8 * ornamentRadius, liftHeight + 0.4 * ornamentRadius);
+    // const rightCurveControl = new THREE.Vector3(+0.6 * ornamentRadius, +1.8 * ornamentRadius, liftHeight + 0.4 * ornamentRadius);
+    // const capCurveControl = new THREE.Vector3(0, +2.2 * ornamentRadius, liftHeight + 0.6 * ornamentRadius);
 
-    // Timeline phase boundaries (seconds)
-    const tA0 = 0.00, tA1 = 0.60;
-    const tB0 = 0.60, tB1 = 1.20;
-    const tC0 = 1.20, tC1 = 1.80;
-    const tD0 = 1.80, tD1 = 3.20;
-    const tE0 = 3.20, tE1 = 3.60;
-    const tF0 = 3.20, tF1 = 4.00;
-    const tG0 = 4.00, tG1 = 4.60;
-    const tH0 = 4.60, tH1 = 5.00;
-    const tI0 = 5.00, tI1 = 6.00;
-    const tJ0 = 6.00, tJ1 = 7.00;
-    const tK0 = 7.00, tK1 = 100.00;
+    // // Rotation totals
+    // const deg = (d) => d * Math.PI / 180;
+    // const leftYawTotal = deg(585);
+    // const rightYawTotal = deg(135);
+    // const capPitchTotal = deg(450);
+    // const groupYawTotal = deg(360);
 
-    // -------------------------
-    // Title letter config
-    // -------------------------
-    const titleLetters = ["r", "n", "a", "m", "e", "n", "t", " ", "M", "a", "k", "e", "r"];
+    // // Timeline phase boundaries (seconds)
+    // const tA0 = 0.00, tA1 = 0.60;
+    // const tB0 = 0.60, tB1 = 1.20;
+    // const tC0 = 1.20, tC1 = 1.80;
+    // const tD0 = 1.80, tD1 = 3.20;
+    // const tE0 = 3.20, tE1 = 3.60;
+    // const tF0 = 3.20, tF1 = 4.00;
+    // const tG0 = 4.00, tG1 = 4.60;
+    // const tH0 = 4.60, tH1 = 5.00;
+    // const tI0 = 5.00, tI1 = 6.00;
+    // const tJ0 = 6.00, tJ1 = 7.00;
+    // const tK0 = 7.00, tK1 = 100.00;
 
-    const letterCfg = {
-      baselineY: 0,
-      finalZ: assemblyZ + 0.02,
+    // // -------------------------
+    // // Title letter config
+    // // -------------------------
+    // const titleLetters = ["r", "n", "a", "m", "e", "n", "t", " ", "M", "a", "k", "e", "r"];
 
-      sequenceStart: 5.0,     // seconds on the GSAP timeline
-      flightDuration: 0.2,     // seconds per letter
-      launchDelay: 0.1,       // overlap between letters
+    // const letterCfg = {
+    //   baselineY: 0,
+    //   finalZ: assemblyZ + 0.02,
 
-      startScale: 3.0, //0.18,
-      // finalScale: 0.62,
-      finalScale: 3.0,
-      arcHeight: 1,
+    //   sequenceStart: 5.0,     // seconds on the GSAP timeline
+    //   flightDuration: 0.2,     // seconds per letter
+    //   launchDelay: 0.1,       // overlap between letters
 
-      spacing: 0.7,
-      widthScale: 0.0042,
-      tracking: 0.0,
-      wordGapExtra: 0.0,
+    //   startScale: 3.0, //0.18,
+    //   // finalScale: 0.62,
+    //   finalScale: 3.0,
+    //   arcHeight: 1,
 
-      spawnOffsetX: 0.10,
-      spawnOffsetY: 0,
-      spawnOffsetZ: -0.35,
-    };
+    //   spacing: 0.7,
+    //   widthScale: 0.0042,
+    //   tracking: 0.0,
+    //   wordGapExtra: 0.0,
+
+    //   spawnOffsetX: 0.10,
+    //   spawnOffsetY: 0,
+    //   spawnOffsetZ: -0.35,
+    // };
 
     // -------------------------
     // Scene helpers
@@ -485,8 +529,6 @@
       return paperMesh;
     }
 
-
-
     function setInitialPieceTransforms({
       leftOrnamentPiece,
       rightOrnamentPiece,
@@ -552,37 +594,7 @@
     // Title / letter helpers
     // -------------------------
 
-    // -------------------------
-    // Curves
-    // -------------------------
-    const leftCurve = new THREE.QuadraticBezierCurve3(leftLiftedPosition.clone(), leftCurveControl.clone(), leftAssemblyApproachPosition.clone());
-    const rightCurve = new THREE.QuadraticBezierCurve3(rightLiftedPosition.clone(), rightCurveControl.clone(), rightAssemblyApproachPosition.clone());
-    const capCurve = new THREE.QuadraticBezierCurve3(capLiftedPosition.clone(), capCurveControl.clone(), capAssemblyApproachPosition.clone());
 
-    // -------------------------
-    // Reparent helper (preserve world transform)
-    // -------------------------
-    function reparentPreserveWorld(obj, newParent) {
-      obj.updateMatrixWorld(true);
-      newParent.updateMatrixWorld(true);
-
-      const worldMatrix = obj.matrixWorld.clone();
-      const invParentWorld = new THREE.Matrix4().copy(newParent.matrixWorld).invert();
-
-      obj.parent.remove(obj);
-      newParent.add(obj);
-
-      const localMatrix = new THREE.Matrix4().multiplyMatrices(invParentWorld, worldMatrix);
-      localMatrix.decompose(obj.position, obj.quaternion, obj.scale);
-    }
-
-
-
-
-
-    // -------------------------
-    // Title letter helpers
-    // -------------------------
     function measureLetterWidth(char) {
       const canvas = document.createElement("canvas");
       canvas.width = 512;
@@ -685,7 +697,27 @@
     // Motion path helpers
     // -------------------------
 
-    // ??? curve creation?
+    const leftCurve = new THREE.QuadraticBezierCurve3(leftLiftedPosition.clone(), leftCurveControl.clone(), leftAssemblyApproachPosition.clone());
+    const rightCurve = new THREE.QuadraticBezierCurve3(rightLiftedPosition.clone(), rightCurveControl.clone(), rightAssemblyApproachPosition.clone());
+    const capCurve = new THREE.QuadraticBezierCurve3(capLiftedPosition.clone(), capCurveControl.clone(), capAssemblyApproachPosition.clone());
+
+    // -------------------------
+    // Reparent helper (preserve world transform)
+    // -------------------------
+    function reparentPreserveWorld(obj, newParent) {
+      obj.updateMatrixWorld(true);
+      newParent.updateMatrixWorld(true);
+
+      const worldMatrix = obj.matrixWorld.clone();
+      const invParentWorld = new THREE.Matrix4().copy(newParent.matrixWorld).invert();
+
+      obj.parent.remove(obj);
+      newParent.add(obj);
+
+      const localMatrix = new THREE.Matrix4().multiplyMatrices(invParentWorld, worldMatrix);
+      localMatrix.decompose(obj.position, obj.quaternion, obj.scale);
+    }
+
 
     // -------------------------
     // Timeline helpers
