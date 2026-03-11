@@ -1,5 +1,5 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
-import { ornamentRadius, letterCfg, titleLetters } from "./config.js";
+import { cfg, titleLetters } from "./config.js";
 
 function measureLetterWidth(char) {
     const canvas = document.createElement("canvas");
@@ -37,26 +37,26 @@ function measureLetterWidth(char) {
 
     const sprite = new THREE.Sprite(material);
     // sprite.center.set(0, 0.5);
-    sprite.scale.set(letterCfg.startScale, letterCfg.startScale, 1);
+    sprite.scale.set(cfg.letters.startScale, cfg.letters.startScale, 1);
 
     return sprite;
   }
 
   function computeLetterLayout() {
     let cursorX = 0.62;
-    let prevGlyphWidth = 1.2 * ornamentRadius;
+    let prevGlyphWidth = 1.2 * cfg.geom.ornamentRadius;
     const layout = [];
 
     for (const ch of titleLetters) {
       if (ch === " ") {
-        const spaceWidth = measureLetterWidth(" ") * letterCfg.widthScale + letterCfg.wordGapExtra;
+        const spaceWidth = measureLetterWidth(" ") * cfg.letters.widthScale + cfg.letters.wordGapExtra;
         cursorX += prevGlyphWidth / 2;
         cursorX += spaceWidth;
         prevGlyphWidth = spaceWidth;
         continue;
       }
 
-      const glyphWidth = measureLetterWidth(ch) * letterCfg.widthScale;
+      const glyphWidth = measureLetterWidth(ch) * cfg.letters.widthScale;
 
       cursorX += prevGlyphWidth / 2;
       cursorX += glyphWidth / 2;
@@ -65,12 +65,12 @@ function measureLetterWidth(char) {
         char: ch,
         glyphWidth,
         targetX: cursorX,
-        targetY: letterCfg.baselineY,
-        targetZ: letterCfg.finalZ,
-        arcHeight: letterCfg.arcHeight,
+        targetY: cfg.letters.baselineY,
+        targetZ: cfg.letters.finalZ,
+        arcHeight: cfg.letters.arcHeight,
       });
 
-      cursorX += letterCfg.tracking;
+      cursorX += cfg.letters.tracking;
       prevGlyphWidth = glyphWidth;
     }
 
@@ -87,9 +87,9 @@ function measureLetterWidth(char) {
       sprite.userData.glyphWidth = letterSpec.glyphWidth;
 
       sprite.position.set(
-        letterCfg.spawnOffsetX,
-        letterCfg.spawnOffsetY,
-        letterCfg.spawnOffsetZ
+        cfg.letters.spawnOffsetX,
+        cfg.letters.spawnOffsetY,
+        cfg.letters.spawnOffsetZ
       );
       sprite.userData.targetX = letterSpec.targetX;
       sprite.userData.targetY = letterSpec.targetY;

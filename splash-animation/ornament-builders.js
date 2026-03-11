@@ -1,5 +1,5 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
-import { ornamentRadius, capRadius, paperThickness } from "./config.js";
+import { cfg } from "./config.js";
 
 // --------------------------------------------------
 // Texture helpers
@@ -12,14 +12,14 @@ function loadTexture(path) {
 }
 
 function configureOrnamentTexture(texture) {
-    const imageScale = 1 / (2 * ornamentRadius);
+    const imageScale = 1 / (2 * cfg.geom.ornamentRadius);
     texture.offset.set(0.5, 0.5);
     texture.repeat.set(imageScale, imageScale);
     return texture;
 }
 
 function configureCapTexture(texture) {
-    const imageScale = 1 / (1 * ornamentRadius);
+    const imageScale = 1 / (1 * cfg.geom.ornamentRadius);
     texture.offset.set(0.5, 0.5);
     texture.repeat.set(imageScale, imageScale);
     return texture;
@@ -90,22 +90,22 @@ function roundedRectPath(x, y, w, h, r) {
 
 function makeOrnamentShape() {
     const shape = new THREE.Shape();
-    shape.absarc(0, 0, ornamentRadius, 0, Math.PI * 2, false);
+    shape.absarc(0, 0, cfg.geom.ornamentRadius, 0, Math.PI * 2, false);
 
-    const bumpW = 0.6 * ornamentRadius;
-    const bumpH = 0.8 * ornamentRadius;
-    const bumpRad = 0.2 * ornamentRadius;
-    const overlap = 0.4 * ornamentRadius;
+    const bumpW = 0.6 * cfg.geom.ornamentRadius;
+    const bumpH = 0.8 * cfg.geom.ornamentRadius;
+    const bumpRad = 0.2 * cfg.geom.ornamentRadius;
+    const overlap = 0.4 * cfg.geom.ornamentRadius;
 
     const bx = -bumpW / 2;
-    const by = ornamentRadius - overlap;
+    const by = cfg.geom.ornamentRadius - overlap;
 
     const bump = roundedRectPath(bx, by, bumpW, bumpH, bumpRad);
 
     return { circleShape: shape, bumpShape: bump };
 }
 
-function extrudeShape(shape, depth = paperThickness) {
+function extrudeShape(shape, depth = cfg.geom.paperThickness) {
     const geo = new THREE.ExtrudeGeometry(shape, {
         depth,
         bevelEnabled: false,
@@ -122,8 +122,8 @@ function makeFaceGroups({ circleGeo, bumpGeo, matA, matB, matBump }) {
     const frontBumpMesh = new THREE.Mesh(bumpGeo, matBump);
     const backBumpMesh = new THREE.Mesh(bumpGeo, matBump);
 
-    frontBumpMesh.position.z -= 0.01 * paperThickness;
-    backBumpMesh.position.z -= 0.01 * paperThickness;
+    frontBumpMesh.position.z -= 0.01 * cfg.geom.paperThickness;
+    backBumpMesh.position.z -= 0.01 * cfg.geom.paperThickness;
 
     const frontGroup = new THREE.Group();
     const backGroup = new THREE.Group();
@@ -131,9 +131,9 @@ function makeFaceGroups({ circleGeo, bumpGeo, matA, matB, matBump }) {
     frontGroup.add(frontCircleMesh, frontBumpMesh);
     backGroup.add(backCircleMesh, backBumpMesh);
 
-    frontGroup.position.z += paperThickness / 2;
+    frontGroup.position.z += cfg.geom.paperThickness / 2;
     backGroup.rotation.y = Math.PI;
-    backGroup.position.z += -paperThickness / 2;
+    backGroup.position.z += -cfg.geom.paperThickness / 2;
 
     return { frontGroup, backGroup };
 }

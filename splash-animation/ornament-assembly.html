@@ -57,49 +57,7 @@
     import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
     import { gsap } from "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm";
 
-    // Import all of these things from the config.
-    // Careful with mutable things like Vector3s
-    import {
-      ornamentRadius,
-      capRadius,
-      paperWidth,
-      paperHeight,
-      paperThickness,
-      liftHeight,
-      assemblyZ,
-      ornamentFinalPosition,
-      rightAssemblyApproachPosition,
-      leftAssemblyApproachPosition,
-      capAssemblyApproachPosition,
-      capFinalPosition,
-      titleAnchorPosition,
-      leftStartPosition,
-      rightStartPosition,
-      capStartPosition,
-      leftLiftedPosition,
-      rightLiftedPosition,
-      capLiftedPosition,
-      leftCurveControl,
-      rightCurveControl,
-      capCurveControl,
-      leftYawTotal,
-      rightYawTotal,
-      capPitchTotal,
-      groupYawTotal,
-      tA0, tA1,
-      tB0, tB1,
-      tC0, tC1,
-      tD0, tD1,
-      tE0, tE1,
-      tF0, tF1,
-      tG0, tG1,
-      tH0, tH1,
-      tI0, tI1,
-      tJ0, tJ1,
-      tK0, tK1,
-      titleLetters,
-      letterCfg
-    } from "./config.js";
+    import { cfg, titleLetters } from "./config.js";
 
 
     import {
@@ -120,6 +78,15 @@
     } from "./scene-helpers.js";
 
     import {
+      makePaperMaterial,
+      makeOutlineMaterial,
+      buildPaperMesh,
+      setInitialPieceTransforms,
+      createOutlineGroup,
+      createAssemblyGroups,
+    } from "./scene-construction.js";
+
+    import {
       measureLetterWidth,
       makeLetterSprite,
       computeLetterLayout,
@@ -130,104 +97,14 @@
       resetAndBuildTimeline
     } from "./timeline.js";
 
-    function makePaperMaterial() {
-      return new THREE.MeshStandardMaterial({
-        color: 0xfaf7f0,
-        roughness: 0.9,
-        metalness: 0.0,
-        transparent: true
-      });
-    }
-
-
-
-    function lineFromShape(shape) {
-      const pts = shape.getPoints(128);
-      const geo = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p.x, p.y, 0.001)));
-      return new THREE.LineLoop(geo, outlineMat.clone());
-    }
-
-
-    // -------------------------
-    // Scene construction helpers
-    // -------------------------
-
-    function buildPaperMesh() {
-      const paperGeo = new THREE.PlaneGeometry(paperWidth, paperHeight, 1, 1);
-      const paperMesh = new THREE.Mesh(paperGeo, paperMat);
-      paperMesh.position.set(0, 0.3 * ornamentRadius, 0);
-      return paperMesh;
-    }
-
-    function setInitialPieceTransforms({
-      leftOrnamentPiece,
-      rightOrnamentPiece,
-      capPiece
-    }) {
-      leftOrnamentPiece.group.position.copy(leftStartPosition);
-      rightOrnamentPiece.group.position.copy(rightStartPosition);
-      capPiece.mesh.position.copy(capStartPosition);
-
-      leftOrnamentPiece.group.rotation.set(0, 0, 0);
-      rightOrnamentPiece.group.rotation.set(0, 0, 0);
-      capPiece.mesh.rotation.set(0, 0, 0);
-    }
-
-    function createOutlineGroup({
-      leftOrnamentPiece,
-      rightOrnamentPiece,
-      capPiece
-    }) {
-      const group = new THREE.Group();
-      group.position.set(0, 0, 0);
-
-      const leftCircleOutline = lineFromShape(leftOrnamentPiece.circleShape);
-      const leftBumpOutline = lineFromShape(leftOrnamentPiece.bumpShape);
-      leftCircleOutline.position.copy(leftStartPosition);
-      leftBumpOutline.position.copy(leftStartPosition);
-
-      const rightCircleOutline = lineFromShape(rightOrnamentPiece.circleShape);
-      const rightBumpOutline = lineFromShape(rightOrnamentPiece.bumpShape);
-      rightCircleOutline.position.copy(rightStartPosition);
-      rightBumpOutline.position.copy(rightStartPosition);
-
-      const capOutline = lineFromShape(capPiece.shape);
-      capOutline.position.copy(capStartPosition);
-
-      group.add(
-        leftCircleOutline,
-        leftBumpOutline,
-        rightCircleOutline,
-        rightBumpOutline,
-        capOutline
-      );
-
-      return group;
-    }
-
-    function createAssemblyGroups() {
-      const ornamentAssemblyGroup = new THREE.Group();
-      const titleLetterGroup = new THREE.Group();
-
-      ornamentAssemblyGroup.position.copy(ornamentFinalPosition);
-
-      scene.add(ornamentAssemblyGroup);
-      scene.add(titleLetterGroup);
-
-      return {
-        ornamentAssemblyGroup,
-        titleLetterGroup
-      };
-    }
+    import { createMotionPaths } from "./motion-paths.js";
+    import { startRenderLoop, attachResizeHandler, wireRestartButton } from "./runtime.js";
 
 
     // -------------------------
     // Motion path helpers
     // -------------------------
-
-    const leftCurve = new THREE.QuadraticBezierCurve3(leftLiftedPosition.clone(), leftCurveControl.clone(), leftAssemblyApproachPosition.clone());
-    const rightCurve = new THREE.QuadraticBezierCurve3(rightLiftedPosition.clone(), rightCurveControl.clone(), rightAssemblyApproachPosition.clone());
-    const capCurve = new THREE.QuadraticBezierCurve3(capLiftedPosition.clone(), capCurveControl.clone(), capAssemblyApproachPosition.clone());
+    const { leftCurve, rightCurve, capCurve } = createMotionPaths();
 
     // -------------------------
     // Storyboard
@@ -253,35 +130,31 @@
 
     // Materials
     const paperMat = makePaperMaterial();
-    const outlineMat = new THREE.LineBasicMaterial({
-      color: 0x222222,
-      transparent: true,
-      opacity: 0.0
-    });
+    const outlineMat = makeOutlineMaterial();
 
     // Paper
-    const paperMesh = buildPaperMesh();
+    const paperMesh = buildPaperMesh({ paperMat });
     scene.add(paperMesh);
 
     // Pieces
     const leftOrnamentPiece = createOrnamentPiece({
       frontTexture: ornamentTextureALeft,
       backTexture: ornamentTextureBRight,
-      ornamentRadius,
+      ornamentRadius: cfg.geom.ornamentRadius,
       // thickness: paperThickness
     });
 
     const rightOrnamentPiece = createOrnamentPiece({
       frontTexture: ornamentTextureARight,
       backTexture: ornamentTextureBLeft,
-      ornamentRadius,
+      ornamentRadius: cfg.geom.ornamentRadius,
       // thickness: paperThickness
     });
 
     const capPiece = createCapPiece({
       texture: capTexture,
-      capRadius,
-      ornamentRadius,
+      capRadius: cfg.geom.capRadius,
+      ornamentRadius: cfg.geom.ornamentRadius,
       // thickness: paperThickness
     });
 
@@ -297,7 +170,8 @@
     const outlineGroup = createOutlineGroup({
       leftOrnamentPiece,
       rightOrnamentPiece,
-      capPiece
+      capPiece,
+      outlineMat
     });
     scene.add(outlineGroup);
 
@@ -309,7 +183,7 @@
     const {
       ornamentAssemblyGroup: assemblyGroup,
       titleLetterGroup: letterGroup
-    } = createAssemblyGroups();
+    } = createAssemblyGroups({ scene });
 
     // Debug
     exposeDebugGlobals({
@@ -320,6 +194,7 @@
 
     // Timeline
     const tlRef = { current: null };
+    const movingTitlePoint = new THREE.Vector3(0, 0, cfg.geom.assemblyZ);
     const deps = {
       leftOrnamentPiece,
       rightOrnamentPiece,
@@ -334,7 +209,7 @@
       leftCurve,
       rightCurve,
       capCurve,
-      titleAnchorPosition,
+      movingTitlePoint,
       addLettersToGroup,
       tlRef,
     };
@@ -343,27 +218,21 @@
 
     // Connect UI
 
-    document.getElementById("restart").addEventListener("click", () => {
-      tl = resetAndBuildTimeline(deps);
-      tl.timeScale(0.5);
+    wireRestartButton({
+      buttonEl: document.getElementById("restart"),
+      onRestart: () => {
+        tl = resetAndBuildTimeline(deps);
+        tl.timeScale(0.5);
+      }
     });
 
     // Render
 
-    function animate() {
-      requestAnimationFrame(animate);
-      // controls.update();
-      renderer.render(scene, camera);
-    }
-    animate();
+    startRenderLoop({ renderer, scene, camera });
 
     // Handle resize
 
-    window.addEventListener("resize", () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    attachResizeHandler({ renderer, camera });
 
   </script>
 </body>

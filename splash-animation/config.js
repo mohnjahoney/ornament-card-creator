@@ -7,129 +7,157 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 export const deg = (d) => d * Math.PI / 180;
 
 // --------------------------------------------------
-// Core dimensions
+// Single nested config object
 // --------------------------------------------------
-export const ornamentRadius = 1.6;
-export const capRadius = 0.45 * ornamentRadius;
 
-export const paperWidth = 7.0;
-export const paperHeight = 5.0;
-export const paperThickness = 0.06;
+const ornamentRadius = 1.6;
+const capRadius = 0.45 * ornamentRadius;
 
-export const liftHeight = 0.5 * ornamentRadius;
-export const assemblyZ = 1 * ornamentRadius;
+const paperWidth = 7.0;
+const paperHeight = 5.0;
+const paperThickness = 0.06;
 
-// --------------------------------------------------
-// Key positions
-// --------------------------------------------------
-export const ornamentFinalPosition = new THREE.Vector3(0, 0, assemblyZ);
+const liftHeight = 0.5 * ornamentRadius;
+const assemblyZ = 1 * ornamentRadius;
 
-export const rightAssemblyApproachPosition = new THREE.Vector3(
+const leftStartPoint = new THREE.Vector3(-1.1 * ornamentRadius, 0, 0);
+const rightStartPoint = new THREE.Vector3(+1.1 * ornamentRadius, 0, 0);
+const capStartPoint = new THREE.Vector3(0, 1.3 * ornamentRadius, 0);
+
+const ornamentFinalPoint = new THREE.Vector3(0, 0, assemblyZ);
+
+const rightAssemblyApproachPoint = new THREE.Vector3(
   0,
   1.4 * ornamentRadius,
   assemblyZ
 );
 
-export const leftAssemblyApproachPosition = new THREE.Vector3(
-  rightAssemblyApproachPosition.x,
-  -rightAssemblyApproachPosition.y + 0.3 * ornamentRadius,
-  rightAssemblyApproachPosition.z
+const leftAssemblyApproachPoint = new THREE.Vector3(
+  rightAssemblyApproachPoint.x,
+  -rightAssemblyApproachPoint.y + 0.3 * ornamentRadius,
+  rightAssemblyApproachPoint.z
 );
 
-export const capAssemblyApproachPosition = new THREE.Vector3(
+const capAssemblyApproachPoint = new THREE.Vector3(
   0,
   2 * ornamentRadius,
   assemblyZ
 );
 
-export const capFinalPosition = new THREE.Vector3(
+const capFinalPoint = new THREE.Vector3(
   0,
   0.96 * ornamentRadius,
   assemblyZ
 );
 
-export const titleAnchorPosition = new THREE.Vector3(0, 0, assemblyZ);
-
-export const leftStartPosition = new THREE.Vector3(-1.1 * ornamentRadius, 0, 0);
-export const rightStartPosition = new THREE.Vector3(+1.1 * ornamentRadius, 0, 0);
-export const capStartPosition = new THREE.Vector3(0, 1.3 * ornamentRadius, 0);
-
-export const leftLiftedPosition = leftStartPosition.clone().add(
+const leftLiftedPoint = leftStartPoint.clone().add(
   new THREE.Vector3(-0.1 * ornamentRadius, -0.05 * ornamentRadius, liftHeight)
 );
 
-export const rightLiftedPosition = rightStartPosition.clone().add(
+const rightLiftedPoint = rightStartPoint.clone().add(
   new THREE.Vector3(+0.1 * ornamentRadius, -0.05 * ornamentRadius, liftHeight)
 );
 
-export const capLiftedPosition = capStartPosition.clone().add(
+const capLiftedPoint = capStartPoint.clone().add(
   new THREE.Vector3(0, +0.05 * ornamentRadius, liftHeight)
 );
 
-export const leftCurveControl = new THREE.Vector3(
+const leftCurveControlPoint = new THREE.Vector3(
   -0.6 * ornamentRadius,
   -1.8 * ornamentRadius,
   liftHeight + 0.4 * ornamentRadius
 );
 
-export const rightCurveControl = new THREE.Vector3(
+const rightCurveControlPoint = new THREE.Vector3(
   +0.6 * ornamentRadius,
   +1.8 * ornamentRadius,
   liftHeight + 0.4 * ornamentRadius
 );
 
-export const capCurveControl = new THREE.Vector3(
+const capCurveControlPoint = new THREE.Vector3(
   0,
   +2.2 * ornamentRadius,
   liftHeight + 0.6 * ornamentRadius
 );
 
-// --------------------------------------------------
-// Rotation totals
-// --------------------------------------------------
-export const leftYawTotal = deg(585);
-export const rightYawTotal = deg(135);
-export const capPitchTotal = deg(450);
-export const groupYawTotal = deg(360);
+export const cfg = {
+  geom: {
+    ornamentRadius,
+    capRadius,
+    paperWidth,
+    paperHeight,
+    paperThickness,
+    liftHeight,
+    assemblyZ,
+  },
 
-// --------------------------------------------------
-// Timeline phase boundaries
-// --------------------------------------------------
-export const tA0 = 0.00, tA1 = 0.60;
-export const tB0 = 0.60, tB1 = 1.20;
-export const tC0 = 1.20, tC1 = 1.80;
-export const tD0 = 1.80, tD1 = 3.20;
-export const tE0 = 3.20, tE1 = 3.60;
-export const tF0 = 3.20, tF1 = 4.00;
-export const tG0 = 4.00, tG1 = 4.60;
-export const tH0 = 4.60, tH1 = 5.00;
-export const tI0 = 5.00, tI1 = 6.00;
-export const tJ0 = 6.00, tJ1 = 7.00;
-export const tK0 = 7.00, tK1 = 100.00;
+  pts: {
+    leftStart: leftStartPoint,
+    rightStart: rightStartPoint,
+    capStart: capStartPoint,
 
-// --------------------------------------------------
-// Title / letter config
-// --------------------------------------------------
-export const titleLetters = ["r", "n", "a", "m", "e", "n", "t", " ", "M", "a", "k", "e", "r"];
+    leftLifted: leftLiftedPoint,
+    rightLifted: rightLiftedPoint,
+    capLifted: capLiftedPoint,
 
-export const letterCfg = {
-  baselineY: 0,
-  finalZ: assemblyZ + 0.02,
+    ornamentFinal: ornamentFinalPoint,
+    capFinal: capFinalPoint,
 
-  sequenceStart: 5.0,
-  flightDuration: 0.2,
-  launchDelay: 0.1,
+    rightAssemblyApproach: rightAssemblyApproachPoint,
+    leftAssemblyApproach: leftAssemblyApproachPoint,
+    capAssemblyApproach: capAssemblyApproachPoint,
 
-  startScale: 3.0,
-  finalScale: 3.0,
-  arcHeight: 1,
+    leftCurveControl: leftCurveControlPoint,
+    rightCurveControl: rightCurveControlPoint,
+    capCurveControl: capCurveControlPoint,
+  },
 
-  spacing: 0.7,
-  widthScale: 0.0042,
-  tracking: 0.0,
-  wordGapExtra: 0.0,
+  rot: {
+    leftYawTotal: deg(585),
+    rightYawTotal: deg(135),
+    capPitchTotal: deg(450),
+    groupYawTotal: deg(360),
+  },
 
-  spawnOffsetX: 0.10,
-  spawnOffsetY: 0,
-  spawnOffsetZ: -0.35,
+  timeline: {
+    blankCard: { start: 0.0, duration: 0.6 },
+    revealCutLines: { start: 0.6, duration: 0.6 },
+    liftPieces: { start: 1.2, duration: 0.6 },
+    movePiecesToAssembly: { start: 1.8, duration: 1.4 },
+    settleOrnamentHalves: { start: 3.2, duration: 0.4 },
+    moveCapToAssembly: { start: 3.2, duration: 0.8 },
+    rotateCap: { start: 4.0, duration: 0.6 },
+    settleCap: { start: 4.6, duration: 0.4 },
+    slideTitleAndAssemble: { start: 5.0, duration: 1.0 },
+    easeSpin: { start: 6.0, duration: 1.0 },
+    infiniteSpin: { start: 7.0, duration: 999 },
+  },
+
+  letters: {
+    baselineY: 0,
+    finalZ: assemblyZ + 0.02,
+
+    sequenceStart: 5.0,
+    flightDuration: 0.2,
+    launchDelay: 0.1,
+
+    startScale: 3.0,
+    finalScale: 3.0,
+    arcHeight: 1,
+
+    spacing: 0.7,
+    widthScale: 0.0042,
+    tracking: 0.0,
+    wordGapExtra: 0.0,
+
+    spawnOffsetX: 0.10,
+    spawnOffsetY: 0,
+    spawnOffsetZ: -0.35,
+  },
 };
+
+// --------------------------------------------------
+// Title letters
+// --------------------------------------------------
+
+export const titleLetters = ["r", "n", "a", "m", "e", "n", "t", " ", "M", "a", "k", "e", "r"];
