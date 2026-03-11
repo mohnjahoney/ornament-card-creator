@@ -1,56 +1,64 @@
 import { useWizard } from '@/context/WizardContext';
 import { Button } from '@/components/ui/button';
+import { useEffect, useRef, useState } from 'react';
+import { mountSplashAnimation } from '@/titleAnimation/mountSplashAnimation';
 
 export default function SplashPage() {
   const { dispatch } = useWizard();
+  const mountRef = useRef<HTMLDivElement | null>(null);
+  const [showControls, setShowControls] = useState(false);
+
+  useEffect(() => {
+    const containerEl = mountRef.current;
+    if (!containerEl) return;
+
+    let cancelled = false;
+    setShowControls(false);
+
+    const mounted = mountSplashAnimation(containerEl, {
+      showUI: false,
+      timeScale: 0.5,
+      onNearlyFinished: () => {
+        if (cancelled) return;
+        setShowControls(true);
+      },
+    });
+
+    return () => {
+      cancelled = true;
+      mounted.unmount();
+    };
+  }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
-      {/* Decorative ornaments */}
-      <div className="flex gap-6 mb-8">
-        {['hsl(350,65%,40%)', 'hsl(150,35%,30%)', 'hsl(42,75%,50%)'].map(
-          (color, i) => (
-            <svg key={i} width="80" height="110" viewBox="0 0 80 110">
-              <line x1="40" y1="0" x2="40" y2="18" stroke="hsl(20,10%,45%)" strokeWidth="2" />
-              <rect x="28" y="14" width="24" height="14" rx="3" fill="hsl(42,75%,50%)" />
-              <circle cx="40" cy="65" r="38" fill={color} />
-              <ellipse
-                cx="30"
-                cy="50"
-                rx="8"
-                ry="14"
-                fill="white"
-                opacity="0.15"
-                transform="rotate(-15 30 50)"
-              />
-            </svg>
-          )
-        )}
+    <div className="relative min-h-screen">
+      <div ref={mountRef} className="absolute inset-0" />
+
+      <div className="relative z-10 min-h-screen flex items-end justify-center p-8 text-center">
+        <div
+          className={[
+            'max-w-md',
+            'transition-all duration-700 ease-out',
+            showControls ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-2 pointer-events-none',
+          ].join(' ')}
+        >
+          <p className="text-lg text-muted-foreground mb-2">
+            Create beautiful printable Christmas ornament cards with your favorite photos.
+          </p>
+          <p className="text-sm text-muted-foreground mb-8">
+            Upload 4 photos, customize your design, and download a ready-to-print PDF that turns into a hanging
+            ornament!
+          </p>
+
+          <Button
+            size="lg"
+            className="text-lg px-10 py-6 rounded-full shadow-lg"
+            onClick={() => dispatch({ type: 'SET_STEP', step: 1 })}
+          >
+            ✨ Start Creating
+          </Button>
+        </div>
       </div>
-
-      <h1
-        className="text-5xl md:text-6xl font-bold text-foreground mb-4"
-        style={{ fontFamily: "'Mountains of Christmas', cursive" }}
-      >
-        Ornament Card Maker
-      </h1>
-
-      <p className="text-lg text-muted-foreground mb-2 max-w-md">
-        Create beautiful printable Christmas ornament cards with your favorite
-        photos.
-      </p>
-      <p className="text-sm text-muted-foreground mb-8 max-w-md">
-        Upload 4 photos, customize your design, and download a ready-to-print
-        PDF that turns into a hanging ornament!
-      </p>
-
-      <Button
-        size="lg"
-        className="text-lg px-10 py-6 rounded-full shadow-lg"
-        onClick={() => dispatch({ type: 'SET_STEP', step: 1 })}
-      >
-        ✨ Start Creating
-      </Button>
     </div>
   );
 }
