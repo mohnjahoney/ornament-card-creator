@@ -39,8 +39,6 @@ const CardRenderer = forwardRef<SVGSVGElement, Props>(
       const capH = COMPUTED.CAP_HEIGHT * S;
       const capRx = COMPUTED.CAP_CORNER_RADIUS * S;
       const capY = cy - r - capH + 8;
-      const connR = COMPUTED.CONNECTOR_RADIUS * S;
-      const connCY = COMPUTED.CONNECTOR_CENTER_Y * S + yOffset;
       const strokeW = CUT.STROKE_WIDTH * S;
       const clipId = `card-clip-${cx}-${yOffset}`;
       const offsetScale = r / DISPLAY_R;
@@ -117,12 +115,25 @@ const CardRenderer = forwardRef<SVGSVGElement, Props>(
             stroke={design.outlineColor}
             strokeWidth={strokeW}
           />
+        </g>
+      );
+    };
 
+    const renderConnector = (yOffset: number) => {
+      const cx = W / 2;
+      const cy = COMPUTED.CONNECTOR_CENTER_Y * S + yOffset;
+      const r = COMPUTED.CONNECTOR_RADIUS * S;
+      const capW = COMPUTED.CAP_WIDTH * S;
+      const strokeW = CUT.STROKE_WIDTH * S;
+      const key = `connector-${yOffset}`;
+
+      return (
+        <g key={key}>
           {/* Connector circle */}
           <circle
             cx={cx}
-            cy={connCY}
-            r={connR}
+            cy={cy}
+            r={r}
             fill={`url(#pattern-${design.pattern})`}
             stroke={design.outlineColor}
             strokeWidth={strokeW}
@@ -131,17 +142,17 @@ const CardRenderer = forwardRef<SVGSVGElement, Props>(
           {/* Plus sign in connector */}
           <line
             x1={cx - capW / 2}
-            y1={connCY}
+            y1={cy}
             x2={cx + capW / 2}
-            y2={connCY}
+            y2={cy}
             stroke={design.outlineColor}
             strokeWidth={strokeW}
           />
           <line
             x1={cx}
-            y1={connCY - capW / 2}
+            y1={cy - capW / 2}
             x2={cx}
-            y2={connCY + capW / 2}
+            y2={cy + capW / 2}
             stroke={design.outlineColor}
             strokeWidth={strokeW}
           />
@@ -176,6 +187,8 @@ const CardRenderer = forwardRef<SVGSVGElement, Props>(
           opacity={0.3}
         />
 
+        {renderConnector(0)}
+
         {/* Front (top half): left slot=bottom, right slot=top */}
         {renderOrnament(images[0], lcx, 0, 'bottom')}
         {renderOrnament(images[1], rcx, 0, 'top')}
@@ -193,6 +206,8 @@ const CardRenderer = forwardRef<SVGSVGElement, Props>(
             {textTemplate.text}
           </text>
         )}
+
+        {renderConnector(H / 2)}
 
         {/* Back (bottom half): left slot=top, right slot=bottom */}
         {renderOrnament(images[2], lcx, H / 2, 'top')}

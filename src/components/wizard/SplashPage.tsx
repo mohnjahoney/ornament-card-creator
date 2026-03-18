@@ -33,8 +33,9 @@ export default function SplashPage() {
   return (
     <div className="relative min-h-screen">
       <div ref={mountRef} className="absolute inset-0" />
-
-      <div className="relative z-10 min-h-screen flex items-end justify-center p-8 text-center">
+      
+      <div className="relative z-10 min-h-screen flex items-end justify-center pb-20 px-8 p-8 text-center">
+      {/* <div className="relative z-10 min-h-screen flex items-end justify-center p-8 text-center"> */}
         <div
           className={[
             'max-w-md',
@@ -43,11 +44,14 @@ export default function SplashPage() {
           ].join(' ')}
         >
           <p className="text-lg text-muted-foreground mb-2">
-            Create beautiful printable Christmas ornament cards with your favorite photos.
+            {/* Create beautiful printable Christmas ornament cards with your favorite photos. */}
+            Last year your Xmas card went on their fridge.
+            This year it can hang on their tree!
           </p>
           <p className="text-sm text-muted-foreground mb-8">
-            Upload 4 photos, customize your design, and download a ready-to-print PDF that turns into a hanging
-            ornament!
+            {/* Upload 4 photos, customize your design, and download a ready-to-print PDF that turns into a hanging
+            ornament! */}
+            Create a card your loved ones can turn into a custom photo ornament.
           </p>
 
           <Button
