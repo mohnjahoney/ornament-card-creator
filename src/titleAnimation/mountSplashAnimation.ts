@@ -1,16 +1,30 @@
 import * as THREE from 'three';
 import { cfg } from './config';
+// import {
+//   loadTexture,
+//   configureOrnamentTexture,
+//   configureCapTexture,
+//   createOrnamentPiece,
+//   createCapPiece,
+//   createScene,
+//   createCamera,
+//   addSceneLights,
+//   exposeDebugGlobals,
+// } from './shared';
 import {
   loadTexture,
   configureOrnamentTexture,
   configureCapTexture,
   createOrnamentPiece,
   createCapPiece,
+} from './ornament-builders';
+
+import {
   createScene,
   createCamera,
   addSceneLights,
   exposeDebugGlobals,
-} from './shared';
+} from './scene-helpers';
 import { addLettersToGroup } from './title-helpers';
 import { createMotionPaths } from './motion-paths';
 import {
