@@ -32,7 +32,7 @@ export const DEFAULT_IMAGE_STATE: ImageState = {
 
 export const DEFAULT_DESIGN_OPTIONS: DesignOptions = {
   bgColor: '#ffffff',
-  outlineColor: '#b91c1c',
+  outlineColor: '#8e0c0c',
   capColor: '#fbbf24',
   pattern: 'solid',
   textTemplateId: 'merry',

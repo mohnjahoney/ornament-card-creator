@@ -24,10 +24,20 @@ function makeLetterSprite(char: string) {
   }
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Drop-shadow version:
+  // ctx.shadowColor = 'rgba(255, 224, 160, 0.42)';
+  // ctx.shadowColor = 'rgba(240, 230, 220, 0.8)';
+  // ctx.shadowBlur = 24;
+  // ctx.shadowOffsetX = 2;
+  // ctx.shadowOffsetY = 2;
   ctx.fillStyle = '#8e0c0c';
+  ctx.strokeStyle = 'rgba(240, 220, 200, 0.6)';
+  ctx.lineWidth = 8;
+  ctx.lineJoin = 'round';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = 'bold 160px Arial';
+  ctx.strokeText(char, canvas.width / 2, canvas.height / 2 + 8);
   ctx.fillText(char, canvas.width / 2, canvas.height / 2 + 8);
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -107,4 +117,3 @@ export function addLettersToGroup(letterGroup: THREE.Group) {
 }
 
 export { measureLetterWidth, makeLetterSprite, computeLetterLayout };
-

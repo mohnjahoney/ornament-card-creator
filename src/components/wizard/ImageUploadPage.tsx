@@ -271,7 +271,7 @@ export default function ImageUploadPage() {
               cy={CY}
               r={R}
               fill={img.dataUrl ? 'none' : 'hsl(40,15%,92%)'}
-              stroke="hsl(350,65%,40%)"
+              stroke="hsl(var(--primary))"
               strokeWidth="3"
               opacity={covered ? 1 : 0.5}
             />
