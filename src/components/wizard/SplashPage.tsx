@@ -2,18 +2,25 @@ import { useWizard } from '@/context/WizardContext';
 import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 import { mountSplashAnimation } from '@/titleAnimation/mountSplashAnimation';
+import splashTreeMockup from '@/assets/splash-tree-mockup.png';
 
 export default function SplashPage() {
   const { dispatch } = useWizard();
   const mountRef = useRef<HTMLDivElement | null>(null);
   const [showControls, setShowControls] = useState(false);
+  const [showTreeMockup, setShowTreeMockup] = useState(false);
 
   useEffect(() => {
     const containerEl = mountRef.current;
     if (!containerEl) return;
 
     let cancelled = false;
+    let treeMockupFrame: number | null = null;
     setShowControls(false);
+    setShowTreeMockup(false);
+    treeMockupFrame = requestAnimationFrame(() => {
+      if (!cancelled) setShowTreeMockup(true);
+    });
 
     const mounted = mountSplashAnimation(containerEl, {
       showUI: false,
@@ -26,13 +33,36 @@ export default function SplashPage() {
 
     return () => {
       cancelled = true;
+      if (treeMockupFrame != null) cancelAnimationFrame(treeMockupFrame);
       mounted.unmount();
     };
   }, []);
 
   return (
     <div className="relative min-h-screen">
-      <div ref={mountRef} className="absolute inset-0" />
+      <div
+        className={[
+          'pointer-events-none absolute inset-0 z-0 overflow-hidden',
+          'transition-opacity ease-out',
+          showTreeMockup ? 'opacity-100' : 'opacity-0',
+        ].join(' ')}
+        style={{
+          transitionDuration: '1600ms',
+        }}
+      >
+        <img
+          src={splashTreeMockup}
+          alt=""
+          className="h-full w-full object-cover"
+          style={{
+            transform: 'translate(-15%, -15%) scale(1.18)',
+            transformOrigin: 'top left',
+          }}
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(6,7,6,0.12),rgba(6,7,6,0.34))]" />
+      </div>
+
+      <div ref={mountRef} className="absolute inset-0 z-[1]" style={{ background: 'transparent' }} />
       
       <div className="relative z-10 min-h-screen flex items-end justify-center pb-20 px-8 p-8 text-center">
       {/* <div className="relative z-10 min-h-screen flex items-end justify-center p-8 text-center"> */}
